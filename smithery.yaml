@@ -1,0 +1,65 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required: ["crdbHost"]
+    properties:
+      crdbHost:
+        title: "CockroachDB Hostname"
+        type: string
+        default: "127.0.0.1"
+        description: CockroachDB hostname or IP address
+      crdbPort:
+        type: integer
+        default: 26257
+        title: CockroachDB Port
+      crdbUsername:
+        type: string
+        default: "root"
+        title: CockroachDB Username
+      crdbPassword:
+        type: string
+        title: CockroachDB Password
+      crdbDatabase:
+        type: string
+        default: "defaultdb"
+        title: CockroachDB Database
+      crdbSSLMode:
+        title: SSL Mode
+        type: string
+        default: disable          
+        enum: ["disable", "allow", "prefer", "require", "verify-ca", "verify-full"]
+        description: SSL mode for CockroachDB connection
+      crdbCAPath:
+        title: SSL CA Certificate
+        type: string
+        description: CA certificate path for verifying server
+      crdbKeyfile:
+        title: SSL User Key File
+        type: string
+        description: Client private key file for authentication
+      crdbCertfile:
+        title: SSL User Certificate File
+        type: string
+        description: Client certificate file for authentication
+  commandFunction:
+    # A function that produces the CLI command to start the MCP on stdio.
+    |-
+    (config) => ({ 
+      command: 'docker', 
+      args: [
+        'run',
+        '--rm',
+        '--name',
+        'cockroachdb-mcp-server',
+        '-i',
+        '-e', `CRDB_HOST=${config.crdbHost}`,
+        '-e', `CRDB_PORT=${config.crdbPort}`,
+        '-e', `CRDB_DATABASE=${config.crdbDatabase}`,
+        '-e', `CRDB_USERNAME=${config.crdbUsername}`,
+        'smithery/mcp-cockroachdb:latest'
+      ]
+    })
