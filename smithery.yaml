@@ -5,59 +5,70 @@ startCommand:
   configSchema:
     # JSON Schema defining the configuration options for the MCP.
     type: object
-    required: ["crdbHost"]
+    required: []
     properties:
       crdbHost:
-        title: "CockroachDB Hostname"
         type: string
-        default: "127.0.0.1"
-        description: CockroachDB hostname or IP address
+        default: 127.0.0.1
+        description: CockcorachDB IP or hostname
       crdbPort:
-        type: integer
+        type: number
         default: 26257
-        title: CockroachDB Port
+        description: CockcorachDB port
       crdbUsername:
         type: string
-        default: "root"
-        title: CockroachDB Username
-      crdbPassword:
+        default: root
+        description: CockcorachDB username
+      crdbPwd:
         type: string
-        title: CockroachDB Password
+        default: ""
+        description: CockcorachDB password
       crdbDatabase:
         type: string
-        default: "defaultdb"
-        title: CockroachDB Database
-      crdbSSLMode:
-        title: SSL Mode
-        type: string
-        default: disable          
-        enum: ["disable", "allow", "prefer", "require", "verify-ca", "verify-full"]
-        description: SSL mode for CockroachDB connection
+        default: defaultdb
+        description: CockcorachDB database
       crdbCAPath:
-        title: SSL CA Certificate
         type: string
+        default: ""
         description: CA certificate path for verifying server
-      crdbKeyfile:
-        title: SSL User Key File
+      crdbSSLKeyfile:
         type: string
+        default: ""
         description: Client private key file for authentication
-      crdbCertfile:
-        title: SSL User Certificate File
+      crdbSSLCertfile:
         type: string
+        default: ""
         description: Client certificate file for authentication
+      crdbCertMode:
+        type: string
+        default: disable
+        description: SSL Certificate requirements
   commandFunction:
-    # A function that produces the CLI command to start the MCP on stdio.
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
     |-
-    (config) => ({ 
-      command: 'docker', 
-      args: [
-        'run',
-        '--rm',
-        '-i',
-        '-e', `CRDB_HOST=${config.crdbHost}`,
-        '-e', `CRDB_PORT=${config.crdbPort}`,
-        '-e', `CRDB_DATABASE=${config.crdbDatabase}`,
-        '-e', `CRDB_USERNAME=${config.crdbUsername}`,
-        'smithery/mcp-cockroachdb:latest'
-      ]
+    (config) => ({
+      command: 'uv',
+      args: ['run', 'python', 'src/main.py'],
+      env: {
+        CRDB_HOST: config.crdbHost,
+        CRDB_PORT: String(config.crdbPort),
+        CRDB_USERNAME: config.crdbUsername,
+        CRDB_PWD: config.crdbPwd,
+        CRDB_DATABASE: config.crdbDatabase,
+        CRDB_SSL_CA_PATH: config.crdbCAPath,
+        CRDB_SSL_KEYFILE: config.crdbSSLKeyfile,
+        CRDB_SSL_CERTFILE: config.crdbSSLCertfile,
+        CRDB_SSL_MODE: config.crdbCertMode
+      }
     })
+  exampleConfig:
+    crdbHost: 127.0.0.1
+    crdbPort: 26257
+    crdbUsername: root
+    crdbPwd: ""
+    crdbDatabase: defaultdb
+    crdbCAPath: ""
+    crdbSSLKeyfile: ""
+    crdbSSLCertfile: ""
+    crdbCertMode: required
+

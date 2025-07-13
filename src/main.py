@@ -12,7 +12,8 @@ class CockroachMCPServer:
         print("Starting the CockroachDB MCP Server", file=sys.stderr)
 
     def run(self):
-        mcp.run()
+        if mcp:
+            mcp.run()
 
 @click.command()
 @click.option('--url', help='CockroachDB connection URI (cockroach://<username>:<password>@<host>:<port>/<database> or postgresql://<username>:<password>@<host>:<port>/<database>)')
@@ -57,7 +58,6 @@ def cli(url, host, port, db, username, password,
         if ssl_ca_cert:
             cfg['ssl_ca_cert'] = ssl_ca_cert
     
-
         set_crdb_config_from_cli(cfg)
     else: 
         print(f"You are in CLI mode. You must fill in at least one of the two parameters --url or --host to launch the MCP server", file=sys.stderr)

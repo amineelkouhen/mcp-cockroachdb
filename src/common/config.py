@@ -5,7 +5,6 @@ import urllib.parse
 load_dotenv()
 
 CRDB_CONFIG = {
-             "url": os.getenv('CRDB_URL', None),
              "host": os.getenv('CRDB_HOST', '127.0.0.1'),
              "port": int(os.getenv('CRDB_PORT', 26257)),
              "username": os.getenv('CRDB_USERNAME', 'root'),
@@ -69,7 +68,6 @@ def parse_crdb_uri(uri: str) -> dict:
 
     return config
 
-
 def set_crdb_config_from_cli(config: dict):
     for key, value in config.items():
         if key == 'port':
@@ -78,19 +76,3 @@ def set_crdb_config_from_cli(config: dict):
         else:
             # Convert other values to strings
             CRDB_CONFIG[key] = str(value) if value is not None else None
-
-    backfill_config()
-
-def backfill_config():
-    dns = ""
-    if CRDB_CONFIG["url"] is None:
-        dns = f'''postgresql://{CRDB_CONFIG["username"]}'''    
-        if CRDB_CONFIG["password"]:
-            dns += f''':{CRDB_CONFIG["password"]}@{CRDB_CONFIG["host"]}:{CRDB_CONFIG["port"]}/{CRDB_CONFIG["db"]}?sslmode={CRDB_CONFIG["ssl_mode"]}'''
-        else:
-            dns += f'''@{CRDB_CONFIG["host"]}:{CRDB_CONFIG["port"]}/{CRDB_CONFIG["db"]}?sslmode={CRDB_CONFIG["ssl_mode"]}'''
-
-        if CRDB_CONFIG["ssl_mode"] != 'disable':
-            dns += f'''&sslrootcert={CRDB_CONFIG["ssl_ca_cert"]}&sslcert={CRDB_CONFIG["ssl_cert"]}&sslkey={CRDB_CONFIG["ssl_key"]}'''
-
-        CRDB_CONFIG["url"] = dns

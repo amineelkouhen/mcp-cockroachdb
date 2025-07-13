@@ -6,7 +6,7 @@ from typing import AsyncIterator
 from dataclasses import dataclass
 from contextlib import asynccontextmanager
 from mcp.server.fastmcp import FastMCP
-from src.common.config import CRDB_CONFIG, backfill_config
+from src.common.config import CRDB_CONFIG
 
 @dataclass
 class AppContext:
@@ -19,21 +19,30 @@ class AppContext:
 @asynccontextmanager
 async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
 
-    backfill_config()
-    database_url = CRDB_CONFIG['url']
-    if not database_url:
-        print("CRDB_URL is not set", file=sys.stderr)
-        sys.exit(1)
+    database_url = f'''postgresql://{CRDB_CONFIG["username"]}'''    
+    if CRDB_CONFIG["password"]:
+        database_url += f''':{CRDB_CONFIG["password"]}@{CRDB_CONFIG["host"]}:{CRDB_CONFIG["port"]}/{CRDB_CONFIG["db"]}?sslmode={CRDB_CONFIG["ssl_mode"]}'''
+    else:
+        database_url += f'''@{CRDB_CONFIG["host"]}:{CRDB_CONFIG["port"]}/{CRDB_CONFIG["db"]}?sslmode={CRDB_CONFIG["ssl_mode"]}'''
 
-    # Create connection pool
-    pool = await asyncpg.create_pool(
-        database_url,
-        min_size=5,
-        max_size=20,
-        command_timeout=60
-    )
-
+    if CRDB_CONFIG["ssl_mode"] != 'disable':
+        database_url += f'''&sslrootcert={CRDB_CONFIG["ssl_ca_cert"]}&sslcert={CRDB_CONFIG["ssl_cert"]}&sslkey={CRDB_CONFIG["ssl_key"]}'''
+    
     print("Connecting to database...", file=sys.stderr)
+    try:
+        # Create connection pool
+        pool = await asyncpg.create_pool(
+            database_url,
+            min_size=5,
+            max_size=20,
+            command_timeout=60
+        )    
+    except Exception as e:
+        print(f"Cannot create connection pool: {e}", file=sys.stderr)
+        # Yield context with pool=None so tools can handle it
+        yield AppContext(pool=None, database="", dns=database_url, query_history=[])
+        return
+
     try:
         async with pool.acquire() as conn:
             version = await conn.fetchval("SELECT version()")
@@ -42,7 +51,8 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
             yield AppContext(pool=pool, database=database, dns=database_url, query_history=[])
     finally:
         print("Closing database connection...", file=sys.stderr)
-        pool.close()
+        if pool:
+            await pool.close()
 
-# Initialize FastMCP server
+# Initialize FastMCP server if pool is not None
 mcp = FastMCP("CockroachDB MCP Server", lifespan=app_lifespan, json_response=True)
