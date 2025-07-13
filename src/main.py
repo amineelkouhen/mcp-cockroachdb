@@ -22,7 +22,7 @@ class CockroachMCPServer:
 @click.option('--db', default='defaultdb', help='Cockroach database name')
 @click.option('--username', default='root', help='Username')
 @click.option('--password', help='Password')
-@click.option('--ssl-mode', default='disable', help='SSL mode for CockroachDB connection. Possible values: require, verify-ca, verify-full. Default is disable.')
+@click.option('--ssl-mode', default='disable', help='SSL mode for CockroachDB connection. Possible values: disable, allow, prefer, require, verify-ca or verify-full. Default is disable.')
 @click.option('--ssl-key', help='Path to SSL Client key file')
 @click.option('--ssl-cert', help='Path to SSL Client certificate file')
 @click.option('--ssl-ca-cert', help='Path to CA (Root) certificate file')

@@ -5,44 +5,54 @@ startCommand:
   configSchema:
     # JSON Schema defining the configuration options for the MCP.
     type: object
-    required: []
+    required: [crdbHost]
     properties:
       crdbHost:
+        title: Host
         type: string
         default: 127.0.0.1
-        description: CockcorachDB IP or hostname
+        description: The host name or address of a CockroachDB node or load balancer.
       crdbPort:
+        title: Port
         type: number
         default: 26257
-        description: CockcorachDB port
+        description: The port number of the SQL interface of the CockroachDB node or load balancer. The default port number for CockroachDB is 26257.
       crdbUsername:
+        title: Username
         type: string
         default: root
-        description: CockcorachDB username
+        description: The SQL user that will own the client session.
       crdbPwd:
+        title: Password
         type: string
         default: ""
-        description: CockcorachDB password
+        description: The user's password. It is not recommended to pass the password in the URL directly. Note that passwords with special characters must be passed as query string parameters (e.g., postgres://maxroach@localhost:26257/movr?password=<password>).
       crdbDatabase:
+        title: Database
         type: string
         default: defaultdb
-        description: CockcorachDB database
+        description: A database name to use as current database. Defaults to defaultdb when using cockroach client commands.
       crdbCAPath:
+        title: CA Certificate
         type: string
         default: ""
-        description: CA certificate path for verifying server
+        description: Path to the CA certificate, when sslmode is not disable.
       crdbSSLKeyfile:
+        title: Client Private Key
         type: string
         default: ""
-        description: Client private key file for authentication
+        description: Path to the client private key, when sslmode is not disable.
       crdbSSLCertfile:
+        title: Client Certificate
         type: string
         default: ""
-        description: Client certificate file for authentication
+        description: Path to the client certificate, when sslmode is not disable.
       crdbCertMode:
+        title: SSL Mode
         type: string
         default: disable
-        description: SSL Certificate requirements
+        enum: [disable, allow, prefer, require, verify-ca, verify-full]
+        description: Which type of secure connection to use.
   commandFunction:
     # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
     |-

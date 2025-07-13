@@ -108,7 +108,7 @@ Additional examples are provided below.
 uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server --url postgresql://localhost:26257/defaultdb
 
 # Run with individual parameters
-uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server --host localhost --port 26257 --database defaultdb --user myuser --password mypassword
+uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server --host localhost --port 26257 --database defaultdb --user root --password mypassword
 
 # See all options
 uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server --help
@@ -224,12 +224,12 @@ uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-
   --host localhost \
   --port 26257 \
   --db defaultdb \
-  --user myuser \
+  --user root \
   --password mypassword
 
 # Using CockroachDB URI (simpler)
 uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server \
-  --url postgresql://user:pass@localhost:26257/defaultdb
+  --url postgresql://root@localhost:26257/defaultdb
 
 # SSL connection
 uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server \
@@ -247,7 +247,6 @@ uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-
 - `--user` - CockroachDB username
 - `--password` - CockroachDB password
 - `--ssl-mode` - SSL mode - Possible values: require, verify-ca, verify-full, disable (default)
-- `--ssl-ca-path` - Path to CA certificate file
 - `--ssl-key` - Path to SSL Client key file
 - `--ssl-cert` - Path to SSL Client certificate file
 - `--ssl-ca-cert` - Path to CA (Root) certificate file'
@@ -256,18 +255,17 @@ uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-
 
 If desired, you can use environment variables. Defaults are provided for all variables.
 
-| Name                 | Description                                               | Default Value                                  |
-|----------------------|-----------------------------------------------------------|------------------------------------------------|
-| `CRDB_URL`           | CockroachDB connection URL                                | `"postgresql://root@127.0.0.1:26257/defaultdb"`|
-| `CRDB_HOST`          | CockroachDB server hostname or IP address                 | None                                           |
-| `CRDB_PORT`          | CockroachDB port                                          | `26257`                                        |
-| `CRDB_DATABASE`      | Database                                                  | `"defaultdb"`                                  |
-| `CRDB_USERNAME`      | Default database username                                 | `"root"`                                       |
-| `CRDB_PWD`           | Default database password                                 | ""                                             |
-| `CRDB_SSL_MODE`      | SSL/TLS mode                                              | `disable`                                      |
-| `CRDB_SSL_CA_PATH`   | CA certificate for verifying server                       | None                                           |
-| `CRDB_SSL_CERTFILE`  | User certificate file                                     | None                                           |
-| `CRDB_SSL_KEYFILE`   | User key file                                             | None                                           |
+| Name                 | Description                                                                    | Default Value      |
+|----------------------|--------------------------------------------------------------------------------|--------------------|
+| `CRDB_HOST`          | The host name or address of a CockroachDB node or load balancer.               | 127.0.0.1          |
+| `CRDB_PORT`          | The port number of the SQL interface of the CockroachDB node or load balancer. | `26257`            |
+| `CRDB_DATABASE`      | A database name to use as current database.                                    | `"defaultdb"`      |
+| `CRDB_USERNAME`      | The SQL user that will own the client session.                                 | `"root"`           |
+| `CRDB_PWD`           | The user's password.                                                           | None               |
+| `CRDB_SSL_MODE`      | Which type of secure connection to use.                                        | `disable`          |
+| `CRDB_SSL_CA_PATH`   | Path to the CA certificate, when sslmode is not disable.                       | None               |
+| `CRDB_SSL_CERTFILE`  | Path to the client certificate, when sslmode is not disable.                   | None               |
+| `CRDB_SSL_KEYFILE`   | Path to the client private key, when sslmode is not disable.                   | None               |
 
 There are several ways to set environment variables:
 
