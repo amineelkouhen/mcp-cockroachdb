@@ -53,8 +53,6 @@ startCommand:
       args: [
         'run',
         '--rm',
-        '--name',
-        'cockroachdb-mcp-server',
         '-i',
         '-e', `CRDB_HOST=${config.crdbHost}`,
         '-e', `CRDB_PORT=${config.crdbPort}`,

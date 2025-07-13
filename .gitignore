@@ -15,6 +15,7 @@ env.bak/
 venv.bak/
 
 # IDE files
+.DS_Store
 .idea/
 .vscode/
 *.swp
