@@ -2,7 +2,7 @@ from mcp.server.fastmcp import Context
 from typing import Dict, Any, List
 from src.common.server import mcp
 from datetime import datetime
-from src.common.CockroachConnectionPool import CockroachConnectionPool
+from src.common.connection import CockroachConnectionPool
 
 @mcp.tool()   
 async def get_cluster_status(ctx: Context, detailed: bool = False) -> Dict[str, Any]:

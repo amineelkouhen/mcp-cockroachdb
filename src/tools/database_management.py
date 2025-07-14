@@ -1,7 +1,7 @@
 from mcp.server.fastmcp import Context
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from src.common.server import mcp
-from src.common.CockroachConnectionPool import CockroachConnectionPool
+from src.common.connection import CockroachConnectionPool
 
 @mcp.tool()
 async def connect(ctx: Context) -> Dict[str, Any]:

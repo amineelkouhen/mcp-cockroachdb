@@ -1,4 +1,4 @@
-from src.common.CockroachConnectionPool import CockroachConnectionPool
+from src.common.connection import CockroachConnectionPool
 from mcp.server.fastmcp import Context
 from typing import Dict, Any, List, Optional
 from src.common.server import mcp

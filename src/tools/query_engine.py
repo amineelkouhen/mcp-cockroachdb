@@ -1,5 +1,5 @@
 import time
-from src.common.CockroachConnectionPool import CockroachConnectionPool
+from src.common.connection import CockroachConnectionPool
 from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
 from mcp.server.fastmcp import Context
