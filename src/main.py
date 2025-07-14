@@ -1,6 +1,6 @@
 import sys
 import click
-from src.common.config import parse_crdb_uri, set_crdb_config_from_cli, CRDB_CONFIG
+from src.common.config import parse_crdb_uri, set_crdb_config_from_cli
 from src.common.server import mcp
 import src.tools.cluster_management
 import src.tools.database_management
