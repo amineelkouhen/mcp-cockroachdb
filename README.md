@@ -6,23 +6,23 @@
 
 ## Overview
 
-The CockroachDB MCP Server is a **natural language interface** designed for LLMs and agentic applications to manage, monitor and query data in CockroachDB. It integrates seamlessly with **MCP (Model Content Protocol)** clients like Claude Desktop or Cursor, enabling AI-driven workflows to to directly interact with your database. 
+The CockroachDB MCP Server is a **natural language interface** designed for LLMs and agentic applications to manage, monitor, and query data in CockroachDB. It integrates seamlessly with **MCP (Model Content Protocol)** clients, such as Claude Desktop or Cursor, enabling AI-driven workflows to interact directly with your database. 
 
 ## Table of Contents
 - [Overview](#overview)
 - [Features](#features)
 - [Tools](#tools)
 - [Installation](#installation)
-  - [Quick Start with uvx](#quick-start-with-uvx)
-  - [Development Installation](#development-installation)
-  - [With Docker](#with-docker)
+  - [Quick Start with uvx](#quick-start-with-uvx)
+  - [Development Installation](#development-installation)
+  - [With Docker](#with-docker)
 - [Configuration](#configuration)
-  - [Configuration via command line arguments](#configuration-via-command-line-arguments)
-  - [Configuration via Environment Variables](#configuration-via-environment-variables)
+  - [Configuration via command line arguments](#configuration-via-command-line-arguments)
+  - [Configuration via Environment Variables](#configuration-via-environment-variables)
 - [Integrations](#integrations)
-  - [Augment](#augment)
-  - [Claude Desktop](#claude-desktop)
-  - [VS Code with GitHub Copilot](#vs-code-with-github-copilot)
+  - [Augment](#augment)
+  - [Claude Desktop](#claude-desktop)
+  - [VS Code with GitHub Copilot](#vs-code-with-github-copilot)
 - [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
@@ -46,7 +46,7 @@ This MCP Server provides tools to manage the data stored in CockroachDB.
 ### Cluster Management
 
 Purpose:
-Offers tools for monitoring and managing the CockroachDB cluster.
+Provides tools for monitoring and managing CockroachDB clusters.
 
 Summary:
 - Get cluster health and node status.
@@ -90,11 +90,11 @@ Summary:
 
 ## Installation
 
-The CockroachDB MCP Server supports the `stdio` [transport](https://modelcontextprotocol.io/docs/concepts/transports#standard-input%2Foutput-stdio). Support for the `streamable-http` transport will be added in the future.
+The CockroachDB MCP Server supports the `stdio` [transport](https://modelcontextprotocol.io/docs/concepts/transports#standard-input%2Foutput-stdio). Support for the `streamable-http` transport will be added in a future release.
 
 ### Quick Start with uvx 
 
-The easiest way to use the CockroachDB MCP Server is with `uvx`, which allows you to run it directly from GitHub (from a branch, or use a tagged release). It is recommended to use a tagged release, the `main` branch is under active development and may contain breaking changes. As an example, you can execute the following command to run the `0.1.0` release:
+The easiest way to use the CockroachDB MCP Server is with `uvx`, which allows you to run it directly from GitHub (from a branch, or use a tagged release). It is recommended to use a tagged release. The `main` branch is under active development and may contain breaking changes. As an example, you can execute the following command to run the `0.1.0` release:
 
 ```commandline
 uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git@0.1.0 cockroachdb-mcp-server --url postgresql://localhost:26257/defaultdb
@@ -141,32 +141,32 @@ The following example is for Claude Desktop, but the same applies to any other M
 1. Specify your CockroachDB credentials and TLS configuration
 2. Retrieve your `uv` command full path (e.g. `which uv`)
 3. Edit the `claude_desktop_config.json` configuration file
-   - on a MacOS, at `~/Library/Application Support/Claude/`
+   - on a MacOS, at `~/Library/Application Support/Claude/`
 
 ```json
 {
-    "mcpServers": {
-        "cockroach": {
-            "command": "<full_path_uv_command>",
-            "args": [
-                "--directory",
-                "<your_mcp_server_directory>",
-                "run",
-                "src/main.py"
-            ],
-            "env": {
-                "CRDB_HOST": "<your_cockroachdb_hostname>",
-                "CRDB_PORT": "<your_cockroachdb_port>",
-                "CRDB_DATABASE": "<your_cockroach_database>",
-                "CRDB_USERNAME": "<your_cockroachdb_user>",
-                "CRDB_PWD": "<your_cockroachdb_password>",
-                "CRDB_SSL_MODE": "disable|allow|prefer|require|verify-ca|verify-full",
-                "CRDB_SSL_CA_PATH": "<your_cockroachdb_ca_path>",
-                "CRDB_SSL_KEYFILE": "<your_cockroachdb_keyfile_path>",
-                "CRDB_SSL_CERTFILE": "<your_cockroachdb_certificate_path>",
-            }
-        }
-    }
+    "mcpServers": {
+        "cockroach": {
+            "command": "<full_path_uv_command>",
+            "args": [
+                "--directory",
+                "<your_mcp_server_directory>",
+                "run",
+                "src/main.py"
+            ],
+            "env": {
+                "CRDB_HOST": "<your_cockroachdb_hostname>",
+                "CRDB_PORT": "<your_cockroachdb_port>",
+                "CRDB_DATABASE": "<your_cockroach_database>",
+                "CRDB_USERNAME": "<your_cockroachdb_user>",
+                "CRDB_PWD": "<your_cockroachdb_password>",
+                "CRDB_SSL_MODE": "disable|allow|prefer|require|verify-ca|verify-full",
+                "CRDB_SSL_CA_PATH": "<your_cockroachdb_ca_path>",
+                "CRDB_SSL_KEYFILE": "<your_cockroachdb_keyfile_path>",
+                "CRDB_SSL_CERTFILE": "<your_cockroachdb_certificate_path>",
+            }
+        }
+    }
 }
 ```
 
@@ -178,9 +178,9 @@ tail -f ~/Library/Logs/Claude/mcp-server-cockroach.log
 
 ### With Docker
 
-You can use a dockerized deployment of this server. You can either build your own image or use the official [CockroachDB MCP Docker](https://hub.docker.com/r/mcp/cockroachdb) image.
+You can use a dockerized deployment of this server. You can either build your image or use the official [CockroachDB MCP Docker](https://hub.docker.com/r/mcp/cockroachdb) image.
 
-If you'd like to build your own image, the CockroachDB MCP Server provides a Dockerfile. Build this server's image with:
+If you'd like to build your image, the CockroachDB MCP Server provides a Dockerfile. Build this server's image with:
 
 ```commandline
 docker build -t mcp-cockroachdb .
@@ -190,20 +190,20 @@ Finally, configure the client to create the container at start-up. An example fo
 
 ```json
 {
-  "mcpServers": {
-    "cockroach": {
-      "command": "docker",
-      "args": ["run",
-                "--rm",
-                "--name",
-                "cockroachdb-mcp-server",
-                "-e", "CRDB_HOST=<cockroachdb_host>",
-                "-e", "CRDB_PORT=<cockroachdb_port>",
-                "-e", "CRDB_DATABASE=<cockroachdb_database>",
-                "-e", "CRDB_USERNAME=<cockroachdb_user>",
-                "mcp-cockroachdb"]
-    }
-  }
+  "mcpServers": {
+    "cockroach": {
+      "command": "docker",
+      "args": ["run",
+                "--rm",
+                "--name",
+                "cockroachdb-mcp-server",
+                "-e", "CRDB_HOST=<cockroachdb_host>",
+                "-e", "CRDB_PORT=<cockroachdb_port>",
+                "-e", "CRDB_DATABASE=<cockroachdb_database>",
+                "-e", "CRDB_USERNAME=<cockroachdb_user>",
+                "mcp-cockroachdb"]
+    }
+  }
 }
 ```
 
@@ -211,8 +211,8 @@ To use the [CockroachDB MCP Docker](https://hub.docker.com/r/mcp/cockroachdb) im
 
 ## Configuration
 
-The CockroachDB MCP Server can be configured in two ways: via command line arguments or via environment variables.
-The precedence is: command line arguments > environment variables > default values.
+The CockroachDB MCP Server can be configured in two ways: either via command-line arguments or via environment variables.
+The precedence is: CLI arguments > environment variables > default values.
 
 ### Configuration via command line arguments
 
@@ -221,19 +221,19 @@ When using the CLI interface, you can configure the server with command line arg
 ```sh
 # Basic CockroachDB connection
 uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server \
-  --host localhost \
-  --port 26257 \
-  --db defaultdb \
-  --user root \
-  --password mypassword
+  --host localhost \
+  --port 26257 \
+  --db defaultdb \
+  --user root \
+  --password mypassword
 
 # Using CockroachDB URI (simpler)
 uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server \
-  --url postgresql://root@localhost:26257/defaultdb
+  --url postgresql://root@localhost:26257/defaultdb
 
 # SSL connection
 uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server \
-  --url postgresql://user:pass@cockroach.example.com:26257/defaultdb?sslmode=verify-full&sslrootcert=path/to/ca.crt&sslcert=path/to/client.username.crt&sslkey=path/to/client.username.key
+  --url postgresql://user:pass@cockroach.example.com:26257/defaultdb?sslmode=verify-full&sslrootcert=path/to/ca.crt&sslcert=path/to/client.username.crt&sslkey=path/to/client.username.key
 
 # See all available options
 uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server --help
@@ -255,21 +255,21 @@ uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-
 
 If desired, you can use environment variables. Defaults are provided for all variables.
 
-| Name                 | Description                                                                    | Default Value      |
-|----------------------|--------------------------------------------------------------------------------|--------------------|
-| `CRDB_HOST`          | The host name or address of a CockroachDB node or load balancer.               | 127.0.0.1          |
-| `CRDB_PORT`          | The port number of the SQL interface of the CockroachDB node or load balancer. | `26257`            |
-| `CRDB_DATABASE`      | A database name to use as current database.                                    | `"defaultdb"`      |
-| `CRDB_USERNAME`      | The SQL user that will own the client session.                                 | `"root"`           |
-| `CRDB_PWD`           | The user's password.                                                           | None               |
-| `CRDB_SSL_MODE`      | Which type of secure connection to use.                                        | `disable`          |
-| `CRDB_SSL_CA_PATH`   | Path to the CA certificate, when sslmode is not disable.                       | None               |
-| `CRDB_SSL_CERTFILE`  | Path to the client certificate, when sslmode is not disable.                   | None               |
-| `CRDB_SSL_KEYFILE`   | Path to the client private key, when sslmode is not disable.                   | None               |
+| Name                 | Description                                                                    | Default Value    |
+|----------------------|--------------------------------------------------------------------------------|------------------|
+| `CRDB_HOST`          | The host name or address of a CockroachDB node or load balancer.               | 127.0.0.1        |
+| `CRDB_PORT`          | The port number of the SQL interface of the CockroachDB node or load balancer. | 26257            |
+| `CRDB_DATABASE`      | A database name to use as the current database.                                | defaultdb        |
+| `CRDB_USERNAME`      | The SQL user that will own the client session.                                 | root             |
+| `CRDB_PWD`           | The user's password.                                                           | None             |
+| `CRDB_SSL_MODE`      | Which type of secure connection to use.                                        | disable          |
+| `CRDB_SSL_CA_PATH`   | Path to the CA certificate, when sslmode is not `disable`.                     | None             |
+| `CRDB_SSL_CERTFILE`  | Path to the client certificate, when sslmode is not `disable`.                 | None             |
+| `CRDB_SSL_KEYFILE`   | Path to the client private key, when sslmode is not `disable`.                 | None             |
 
 There are several ways to set environment variables:
 
-1. **Using a `.env` File**:  
+1. **Using a `.env` File**:  
 Place a `.env` file in your project directory with key-value pairs for each environment variable. Tools like `python-dotenv`, `pipenv`, and `uv` can automatically load these variables when running your application. This is a convenient and secure way to manage configuration, as it keeps sensitive data out of your shell history and version control (if `.env` is in `.gitignore`).
 For example, create a `.env` file with the following content from the `.env.example` file provided in the repository:
 
@@ -281,18 +281,18 @@ Then edit the `.env` file to set your CockroachDB configuration:
 
 OR,
 
-2. **Setting Variables in the Shell**:  
+2. **Setting Variables in the Shell**:  
 You can export environment variables directly in your shell before running your application. For example:
 
 ```sh
 export CRDB_URL= postgresql://root@127.0.0.1:26257/defaultdb
 ```
 
-This method is useful for temporary overrides or quick testing.
+This method is helpful for temporary overrides or quick testing.
 
 ## Integrations
 
-Integrating this MCP Server to development frameworks like OpenAI Agents SDK, or with tools like Claude Desktop, VS Code, or Augment is described in the following sections.
+Integrating this MCP Server with development frameworks like OpenAI Agents SDK or using tools like Claude Desktop, VS Code, or Augment is described in the following sections.
 
 ### Augment
 
@@ -300,18 +300,18 @@ You can configure the CockroachDB MCP Server in Augment by importing the server 
 
 ```json
 {
-  "mcpServers": {
-    "CockroachDB MCP Server": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/cockroachdb/mcp-cockroachdb.git",
-        "cockroachdb-mcp-server",
-        "--url",
-        "postgresql://root@localhost:26257/defaultdb"
-      ]
-    }
-  }
+  "mcpServers": {
+    "CockroachDB MCP Server": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/cockroachdb/mcp-cockroachdb.git",
+        "cockroachdb-mcp-server",
+        "--url",
+        "postgresql://root@localhost:26257/defaultdb"
+      ]
+    }
+  }
 }
 ```
 
@@ -321,17 +321,17 @@ The simplest way to configure MCP clients is using `uvx`. Add the following JSON
 
 ```json
 {
-    "mcpServers": {
-        "cockroach-mcp-server": {
-            "type": "stdio",
-            "command": "/opt/homebrew/bin/uvx",
-            "args": [
-                "--from", "git+https://github.com/amineelkouhen/mcp-cockroachdb.git",
-                "cockroachdb-mcp-server",
-                "--url", "postgresql://localhost:26257/defaultdb"
-            ]
-        }
-    }
+    "mcpServers": {
+        "cockroach-mcp-server": {
+            "type": "stdio",
+            "command": "/opt/homebrew/bin/uvx",
+            "args": [
+                "--from", "git+https://github.com/amineelkouhen/mcp-cockroachdb.git",
+                "cockroachdb-mcp-server",
+                "--url", "postgresql://localhost:26257/defaultdb"
+            ]
+        }
+    }
 }
 ```
 
@@ -341,7 +341,7 @@ If you'd like to test the [CockroachDB MCP Server](https://smithery.ai/server/@a
 npx -y @smithery/cli install @amineelkouhen/mcp-cockroachdb --client claude
 ```
 
-Follow the prompt and provide the details to configure the server and connect to CockroachDB (e.g. using a managed CockroachDB instance).
+Please follow the prompt and give the details to configure the server and connect to CockroachDB (e.g., using a managed CockroachDB instance).
 The procedure will create the proper configuration in the `claude_desktop_config.json` configuration file.
 
 ### VS Code with GitHub Copilot
@@ -350,7 +350,7 @@ To use the CockroachDB MCP Server with VS Code, you must enable the [agent mode]
 
 ```json
 {
-  "chat.agent.enabled": true
+  "chat.agent.enabled": true
 }
 ```
 
@@ -358,17 +358,17 @@ You can start the GitHub desired version of the CockroachDB MCP server using `uv
 
 ```json
 "mcp": {
-    "servers": {
-        "CockroachDB MCP Server": {
-        "type": "stdio",
-        "command": "uvx", 
-        "args": [
-            "--from", "git+https://github.com/amineelkouhen/mcp-cockroachdb.git",
-            "cockroachdb-mcp-server",
-            "--url", "postgresql://root@localhost:26257/defaultdb"
-        ]
-        },
-    }
+    "servers": {
+        "CockroachDB MCP Server": {
+        "type": "stdio",
+        "command": "uvx", 
+        "args": [
+            "--from", "git+https://github.com/amineelkouhen/mcp-cockroachdb.git",
+            "cockroachdb-mcp-server",
+            "--url", "postgresql://root@localhost:26257/defaultdb"
+        ]
+        },
+    }
 },
 ```
 
@@ -376,51 +376,51 @@ Alternatively, you can start the server using `uv` and configure your `mcp.json`
 
 ```json
 {
-  "servers": {
-    "cockroach": {
-      "type": "stdio",
-      "command": "<full_path_uv_command>",
-      "args": [
-        "--directory",
-        "<your_mcp_server_directory>",
-        "run",
-        "src/main.py"
-      ],
-      "env": {
-        "CRDB_HOST": "<your_cockroachdb_hostname>",
-        "CRDB_PORT": "<your_cockroachdb_port>",
-        "CRDB_DATABASE": "<your_cockroach_database>",
-        "CRDB_USERNAME": "<your_cockroachdb_user>",
-        "CRDB_PWD": "<your_cockroachdb_password>"
-      }
-    }
-  }
+  "servers": {
+    "cockroach": {
+      "type": "stdio",
+      "command": "<full_path_uv_command>",
+      "args": [
+        "--directory",
+        "<your_mcp_server_directory>",
+        "run",
+        "src/main.py"
+      ],
+      "env": {
+        "CRDB_HOST": "<your_cockroachdb_hostname>",
+        "CRDB_PORT": "<your_cockroachdb_port>",
+        "CRDB_DATABASE": "<your_cockroach_database>",
+        "CRDB_USERNAME": "<your_cockroachdb_user>",
+        "CRDB_PWD": "<your_cockroachdb_password>"
+      }
+    }
+  }
 }
 ```
 
 ```json
 {
-  "mcp": {
-    "servers": {
-      "cockroach": {
-        "type": "stdio",
-        "command": "<full_path_uv_command>",
-        "args": [
-          "--directory",
-          "<your_mcp_server_directory>",
-          "run",
-          "src/main.py"
-        ],
-        "env": {
-          "CRDB_HOST": "<your_cockroachdb_hostname>",
-          "CRDB_PORT": "<your_cockroachdb_port>",
-          "CRDB_DATABASE": "<your_cockroach_database>",
-          "CRDB_USERNAME": "<your_cockroachdb_user>",
-          "CRDB_PWD": "<your_cockroachdb_password>"
-        }
-      }
-    }
-  }
+  "mcp": {
+    "servers": {
+      "cockroach": {
+        "type": "stdio",
+        "command": "<full_path_uv_command>",
+        "args": [
+          "--directory",
+          "<your_mcp_server_directory>",
+          "run",
+          "src/main.py"
+        ],
+        "env": {
+          "CRDB_HOST": "<your_cockroachdb_hostname>",
+          "CRDB_PORT": "<your_cockroachdb_port>",
+          "CRDB_DATABASE": "<your_cockroach_database>",
+          "CRDB_USERNAME": "<your_cockroachdb_user>",
+          "CRDB_PWD": "<your_cockroachdb_password>"
+        }
+      }
+    }
+  }
 }
 ```
 
@@ -444,4 +444,4 @@ npx @modelcontextprotocol/inspector uv run src/main.py
 This project is licensed under the **MIT License**.
 
 ## Contact
-For questions or support, reach out via [GitHub Issues](https://github.com/amineelkouhen/mcp-cockroachdb/issues).
+If you have any questions or need support, please feel free to contact us through [GitHub Issues](https://github.com/amineelkouhen/mcp-cockroachdb/issues).
