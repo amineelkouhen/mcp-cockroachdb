@@ -277,12 +277,18 @@ async def drop_database(ctx: Context, database_name: str) -> Dict[str, Any]:
     Returns:
         A success message or an error message.
     """
+    current_database: str = ctx.request_context.lifespan_context.database
+    if(database_name == 'defaultdb'):
+        return {"success": False, "error": "Cannot drop the default database."}
+    if(database_name.lower() == current_database.lower()):
+        await switch_database(ctx, 'defaultdb')
+
     pool = ctx.request_context.lifespan_context.pool
     if not pool:
         raise Exception("Not connected to database")
     try:
         async with pool.acquire() as conn:
-            await conn.execute(f'DROP DATABASE "{database_name}" CASCADE')
+            await conn.execute(f'DROP DATABASE IF EXISTS "{database_name}" CASCADE')
         return {"success": True, "message": f"Database '{database_name}' dropped."}
     except Exception as e:
         return {"success": False, "error": str(e)}
