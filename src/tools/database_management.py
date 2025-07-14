@@ -288,7 +288,7 @@ async def drop_database(ctx: Context, database_name: str) -> Dict[str, Any]:
         raise Exception("Not connected to database")
     try:
         async with pool.acquire() as conn:
-            await conn.execute(f'DROP DATABASE IF EXISTS "{database_name}" CASCADE')
-        return {"success": True, "message": f"Database '{database_name}' dropped."}
+            await conn.execute(f'DROP DATABASE IF EXISTS "{database_name.lower()}" CASCADE')
+        return {"success": True, "message": f"Database '{database_name.lower()}' dropped."}
     except Exception as e:
         return {"success": False, "error": str(e)}
