@@ -145,28 +145,28 @@ The following example is for Claude Desktop, but the same applies to any other M
 
 ```json
 {
-    "mcpServers": {
-        "cockroach": {
-            "command": "<full_path_uv_command>",
-            "args": [
-                "--directory",
-                "<your_mcp_server_directory>",
-                "run",
-                "src/main.py"
-            ],
-            "env": {
-                "CRDB_HOST": "<your_cockroachdb_hostname>",
-                "CRDB_PORT": "<your_cockroachdb_port>",
-                "CRDB_DATABASE": "<your_cockroach_database>",
-                "CRDB_USERNAME": "<your_cockroachdb_user>",
-                "CRDB_PWD": "<your_cockroachdb_password>",
-                "CRDB_SSL_MODE": "disable|allow|prefer|require|verify-ca|verify-full",
-                "CRDB_SSL_CA_PATH": "<your_cockroachdb_ca_path>",
-                "CRDB_SSL_KEYFILE": "<your_cockroachdb_keyfile_path>",
-                "CRDB_SSL_CERTFILE": "<your_cockroachdb_certificate_path>",
-            }
-        }
-    }
+    "mcpServers": {
+        "cockroach": {
+            "command": "<full_path_uv_command>",
+            "args": [
+                "--directory",
+                "<your_mcp_server_directory>",
+                "run",
+                "src/main.py"
+            ],
+            "env": {
+                "CRDB_HOST": "<your_cockroachdb_hostname>",
+                "CRDB_PORT": "<your_cockroachdb_port>",
+                "CRDB_DATABASE": "<your_cockroach_database>",
+                "CRDB_USERNAME": "<your_cockroachdb_user>",
+                "CRDB_PWD": "<your_cockroachdb_password>",
+                "CRDB_SSL_MODE": "disable|allow|prefer|require|verify-ca|verify-full",
+                "CRDB_SSL_CA_PATH": "<your_cockroachdb_ca_path>",
+                "CRDB_SSL_KEYFILE": "<your_cockroachdb_keyfile_path>",
+                "CRDB_SSL_CERTFILE": "<your_cockroachdb_certificate_path>",
+            }
+        }
+    }
 }
 ```
 
@@ -190,20 +190,20 @@ Finally, configure the client to create the container at start-up. An example fo
 
 ```json
 {
-  "mcpServers": {
-    "cockroach": {
-      "command": "docker",
-      "args": ["run",
-                "--rm",
-                "--name",
-                "cockroachdb-mcp-server",
-                "-e", "CRDB_HOST=<cockroachdb_host>",
-                "-e", "CRDB_PORT=<cockroachdb_port>",
-                "-e", "CRDB_DATABASE=<cockroachdb_database>",
-                "-e", "CRDB_USERNAME=<cockroachdb_user>",
-                "mcp-cockroachdb"]
-    }
-  }
+  "mcpServers": {
+    "cockroach": {
+      "command": "docker",
+      "args": ["run",
+                "--rm",
+                "--name",
+                "cockroachdb-mcp-server",
+                "-e", "CRDB_HOST=<cockroachdb_host>",
+                "-e", "CRDB_PORT=<cockroachdb_port>",
+                "-e", "CRDB_DATABASE=<cockroachdb_database>",
+                "-e", "CRDB_USERNAME=<cockroachdb_user>",
+                "mcp-cockroachdb"]
+    }
+  }
 }
 ```
 
@@ -300,18 +300,18 @@ You can configure the CockroachDB MCP Server in Augment by importing the server 
 
 ```json
 {
-  "mcpServers": {
-    "CockroachDB MCP Server": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/cockroachdb/mcp-cockroachdb.git",
-        "cockroachdb-mcp-server",
-        "--url",
-        "postgresql://root@localhost:26257/defaultdb"
-      ]
-    }
-  }
+  "mcpServers": {
+    "CockroachDB MCP Server": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/cockroachdb/mcp-cockroachdb.git",
+        "cockroachdb-mcp-server",
+        "--url",
+        "postgresql://root@localhost:26257/defaultdb"
+      ]
+    }
+  }
 }
 ```
 
@@ -321,17 +321,17 @@ The simplest way to configure MCP clients is using `uvx`. Add the following JSON
 
 ```json
 {
-    "mcpServers": {
-        "cockroach-mcp-server": {
-            "type": "stdio",
-            "command": "/opt/homebrew/bin/uvx",
-            "args": [
-                "--from", "git+https://github.com/amineelkouhen/mcp-cockroachdb.git",
-                "cockroachdb-mcp-server",
-                "--url", "postgresql://localhost:26257/defaultdb"
-            ]
-        }
-    }
+    "mcpServers": {
+        "cockroach-mcp-server": {
+            "type": "stdio",
+            "command": "/opt/homebrew/bin/uvx",
+            "args": [
+                "--from", "git+https://github.com/amineelkouhen/mcp-cockroachdb.git",
+                "cockroachdb-mcp-server",
+                "--url", "postgresql://localhost:26257/defaultdb"
+            ]
+        }
+    }
 }
 ```
 
@@ -350,7 +350,7 @@ To use the CockroachDB MCP Server with VS Code, you must enable the [agent mode]
 
 ```json
 {
-  "chat.agent.enabled": true
+  "chat.agent.enabled": true
 }
 ```
 
@@ -358,17 +358,17 @@ You can start the GitHub desired version of the CockroachDB MCP server using `uv
 
 ```json
 "mcp": {
-    "servers": {
-        "CockroachDB MCP Server": {
-        "type": "stdio",
-        "command": "uvx", 
-        "args": [
-            "--from", "git+https://github.com/amineelkouhen/mcp-cockroachdb.git",
-            "cockroachdb-mcp-server",
-            "--url", "postgresql://root@localhost:26257/defaultdb"
-        ]
-        },
-    }
+    "servers": {
+        "CockroachDB MCP Server": {
+        "type": "stdio",
+        "command": "uvx", 
+        "args": [
+            "--from", "git+https://github.com/amineelkouhen/mcp-cockroachdb.git",
+            "cockroachdb-mcp-server",
+            "--url", "postgresql://root@localhost:26257/defaultdb"
+        ]
+        },
+    }
 },
 ```
 
@@ -376,51 +376,25 @@ Alternatively, you can start the server using `uv` and configure your `mcp.json`
 
 ```json
 {
-  "servers": {
-    "cockroach": {
-      "type": "stdio",
-      "command": "<full_path_uv_command>",
-      "args": [
-        "--directory",
-        "<your_mcp_server_directory>",
-        "run",
-        "src/main.py"
-      ],
-      "env": {
-        "CRDB_HOST": "<your_cockroachdb_hostname>",
-        "CRDB_PORT": "<your_cockroachdb_port>",
-        "CRDB_DATABASE": "<your_cockroach_database>",
-        "CRDB_USERNAME": "<your_cockroachdb_user>",
-        "CRDB_PWD": "<your_cockroachdb_password>"
-      }
-    }
-  }
-}
-```
-
-```json
-{
-  "mcp": {
-    "servers": {
-      "cockroach": {
-        "type": "stdio",
-        "command": "<full_path_uv_command>",
-        "args": [
-          "--directory",
-          "<your_mcp_server_directory>",
-          "run",
-          "src/main.py"
-        ],
-        "env": {
-          "CRDB_HOST": "<your_cockroachdb_hostname>",
-          "CRDB_PORT": "<your_cockroachdb_port>",
-          "CRDB_DATABASE": "<your_cockroach_database>",
-          "CRDB_USERNAME": "<your_cockroachdb_user>",
-          "CRDB_PWD": "<your_cockroachdb_password>"
-        }
-      }
-    }
-  }
+  "servers": {
+    "cockroach": {
+      "type": "stdio",
+      "command": "<full_path_uv_command>",
+      "args": [
+        "--directory",
+        "<your_mcp_server_directory>",
+        "run",
+        "src/main.py"
+      ],
+      "env": {
+        "CRDB_HOST": "<your_cockroachdb_hostname>",
+        "CRDB_PORT": "<your_cockroachdb_port>",
+        "CRDB_DATABASE": "<your_cockroach_database>",
+        "CRDB_USERNAME": "<your_cockroachdb_user>",
+        "CRDB_PWD": "<your_cockroachdb_password>"
+      }
+    }
+  }
 }
 ```
 
