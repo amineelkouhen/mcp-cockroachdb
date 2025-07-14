@@ -6,7 +6,7 @@ load_dotenv()
 
 CRDB_CONFIG = {
              "host": os.getenv('CRDB_HOST', '127.0.0.1'),
-             "port": int(os.getenv('CRDB_PORT', '26257')),
+             "port": int(os.getenv('CRDB_PORT', '1234')),
              "username": os.getenv('CRDB_USERNAME', 'root'),
              "password": os.getenv('CRDB_PWD', None),
              "database": os.getenv('CRDB_DATABASE', 'defaultdb'),
