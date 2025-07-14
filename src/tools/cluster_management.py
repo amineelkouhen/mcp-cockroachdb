@@ -1,8 +1,8 @@
-import asyncpg
 from mcp.server.fastmcp import Context
 from typing import Dict, Any, List
 from src.common.server import mcp
 from datetime import datetime
+from src.common.CockroachConnectionPool import CockroachConnectionPool
 
 @mcp.tool()   
 async def get_cluster_status(ctx: Context, detailed: bool = False) -> Dict[str, Any]:
@@ -14,7 +14,7 @@ async def get_cluster_status(ctx: Context, detailed: bool = False) -> Dict[str, 
     Returns:
         Details about the cluster's status and how nodes/ranges are distributed or an error message.
     '''
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     try:
@@ -61,7 +61,7 @@ async def show_running_queries(ctx: Context, node_id: int = 1, user: str = 'root
     Returns:
         The queries running on the cluster.
     '''
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
 
@@ -89,7 +89,7 @@ async def show_running_queries(ctx: Context, node_id: int = 1, user: str = 'root
         return {"success": False, "error": str(e)}
 
 @mcp.tool()   
-async def analyze_performance(ctx: Context, query: str = "", time_range: str = "1:0") -> Dict[str, Any]:
+async def analyze_performance(ctx: Context, query: str, time_range: str = "1:0") -> Dict[str, Any]:
     '''Analyze query performance statistics for a given query or time range.
     
     Args:
@@ -99,7 +99,7 @@ async def analyze_performance(ctx: Context, query: str = "", time_range: str = "
     Returns:
         Statistics about performance and latency (e.g., P50, P99).
     '''
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
 
@@ -184,7 +184,7 @@ async def analyze_performance(ctx: Context, query: str = "", time_range: str = "
         return {"success": False, "error": str(e)}
 
 @mcp.tool()   
-async def get_replication_status(ctx: Context, table_name: str = "") -> Dict[str, Any]:
+async def get_replication_status(ctx: Context, table_name: str) -> Dict[str, Any]:
     '''Get replication and distribution status for a table or the whole database.
     
     Args:
@@ -193,7 +193,7 @@ async def get_replication_status(ctx: Context, table_name: str = "") -> Dict[str
     Returns:
         Details about range replication for a specific table or the current database.
     '''
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
 

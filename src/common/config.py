@@ -9,7 +9,7 @@ CRDB_CONFIG = {
              "port": int(os.getenv('CRDB_PORT', 26257)),
              "username": os.getenv('CRDB_USERNAME', 'root'),
              "password": os.getenv('CRDB_PWD', None),
-             "db": os.getenv('CRDB_DATABASE', 'defaultdb'),
+             "database": os.getenv('CRDB_DATABASE', 'defaultdb'),
              "ssl_ca_cert": os.getenv('CRDB_SSL_CA_PATH', None),
              "ssl_key": os.getenv('CRDB_SSL_KEYFILE', None),
              "ssl_cert": os.getenv('CRDB_SSL_CERTFILE', None),
@@ -33,11 +33,11 @@ def parse_crdb_uri(uri: str) -> dict:
     # Database
     if parsed.path and parsed.path != '/':
         try:
-            config['db'] = parsed.path.lstrip('/')
+            config['database'] = parsed.path.lstrip('/')
         except ValueError:
-            config['db'] = 'defaultdb'
+            config['database'] = 'defaultdb'
     else:
-        config['db'] = 'defaultdb'
+        config['database'] = 'defaultdb'
 
     # Authentication
     if parsed.username:

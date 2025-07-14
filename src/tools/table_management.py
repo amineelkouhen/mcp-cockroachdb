@@ -1,4 +1,4 @@
-import asyncpg
+from src.common.CockroachConnectionPool import CockroachConnectionPool
 from mcp.server.fastmcp import Context
 from typing import Dict, Any, List, Optional
 from src.common.server import mcp
@@ -26,7 +26,7 @@ async def create_table(ctx: Context, table_name: str, columns: List[Dict[str, st
             {"name": "created_at", "datatype": "TIMESTAMP"}
         ]
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     try:
@@ -67,7 +67,7 @@ async def bulk_import(ctx: Context, table_name: str, file_url: str, format: str,
     Example:
         bulk_import(ctx, table_name="users", file_url="s3://bucket/data.csv", format="csv", delimiter=";", skip_header=True)
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
 
@@ -106,7 +106,7 @@ async def drop_table(ctx: Context, table_name: str) -> Dict[str, Any]:
     Returns:
         A success message or an error message.
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     try:
@@ -128,7 +128,7 @@ async def create_index(ctx: Context, table_name: str, index_name: str, columns: 
     Returns:
         A success message or an error message.
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     try:
@@ -149,7 +149,7 @@ async def drop_index(ctx: Context, index_name: str) -> Dict[str, Any]:
     Returns:
         A success message or an error message.
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     try:
@@ -170,7 +170,7 @@ async def create_view(ctx: Context, view_name: str, query: str) -> Dict[str, Any
     Returns:
         A success message or an error message.
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     try:
@@ -190,7 +190,7 @@ async def drop_view(ctx: Context, view_name: str) -> Dict[str, Any]:
     Returns:
         A success message or an error message.
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     try:
@@ -210,7 +210,7 @@ async def list_tables(ctx: Context, db_schema: str = "public") -> Dict[str, Any]
     Returns:
         The list of all tables present in the connected Cockroach database.
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     
@@ -247,8 +247,8 @@ async def describe_table(ctx: Context, table_name: str, db_schema: str = "public
     Returns:
         Table details including columns, constraints, indexes, and metadata.
     """
-    pool = ctx.request_context.lifespan_context.pool
-    database = ctx.request_context.lifespan_context.database
+    pool = await CockroachConnectionPool.get_connection_pool()
+    database = ctx.request_context.lifespan_context.current_database
     if not pool:
         raise Exception("Not connected to database")
     
@@ -318,7 +318,7 @@ async def list_views(ctx: Context, db_schema: str = "public") -> Dict[str, Any]:
     Returns:
         All views in a schema
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     
@@ -350,7 +350,7 @@ async def get_table_relationships(ctx: Context, table_name: Optional[str] = None
     Returns:
         List all relationships for a specific table or in a schema.
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     

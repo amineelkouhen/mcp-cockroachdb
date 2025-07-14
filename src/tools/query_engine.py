@@ -1,4 +1,5 @@
 import time
+from src.common.CockroachConnectionPool import CockroachConnectionPool
 from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
 from mcp.server.fastmcp import Context
@@ -19,7 +20,7 @@ async def execute_query(ctx: Context, query: str, params: Optional[List] = None,
         The query resultset in json or csv format.
     '''
     
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     query_history = ctx.request_context.lifespan_context.query_history
     if not pool:
         raise Exception("Not connected to database")
@@ -90,7 +91,7 @@ async def execute_transaction(ctx: Context, queries: List[str]) -> Dict[str, Any
         A success message or an error message.
     '''
     
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     
@@ -133,7 +134,7 @@ async def explain_query(ctx: Context, query: str, analyze: bool = False) -> Dict
         A success message or an error message.
     '''
     
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     

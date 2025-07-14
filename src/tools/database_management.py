@@ -1,72 +1,26 @@
-import asyncpg
 from mcp.server.fastmcp import Context
 from typing import Dict, Any, Optional
 from src.common.server import mcp
+from src.common.CockroachConnectionPool import CockroachConnectionPool
 
 @mcp.tool()
-async def connect_database(ctx: Context, host: str, port: int = 26257, database: str = "defaultdb",
-                        user: str = "root", password: Optional[str] = None,
-                        sslmode: Optional[str] = None, sslcert: Optional[str] = None,
-                        sslkey: Optional[str] = None, sslrootcert: Optional[str] = None) -> Dict[str, Any]:
-    """Connect to a CockroachDB database and create a connection pool.
-
-    Args:
-        host (str): CockroachDB host.
-        port (int): CockroachDB port (default: 26257).
-        database (str): Database name (default: "defaultdb").
-        user (str): Username (default: "root").
-        password (str, optional): Password.
-        sslmode (str): SSL mode (default: disable - Possible values: require, verify-ca, verify-full).
-        sslcert (str, optional): Path to user certificate file.
-        sslkey (str, optional): Path to user key file.
-        sslrootcert (str, optional): Path to CA certificate file.
+async def connect(ctx: Context) -> Dict[str, Any]:
+    """Connect to the default CockroachDB database and create a connection pool.
 
     Returns:
         A success message or an error message.
     """
-    
     try:
-        # Build connection string
-        dsn = f"postgresql://{user}"
-        if password:
-            dsn += f":{password}"
-        dsn += f"@{host}:{port}/{database}"
-
-        # SSL configuration
-        ssl_context = None
-        if sslmode:
-            import ssl as ssl_module
-            ssl_context = ssl_module.create_default_context()
-
-            if sslcert and sslkey:
-                ssl_context.load_cert_chain(sslcert, sslkey)
-            if sslrootcert:
-                ssl_context.load_verify_locations(sslrootcert)
-            else:
-                ssl_context.check_hostname = False
-                ssl_context.verify_mode = ssl_module.CERT_NONE
-
-        # Create connection pool
-        pool = await asyncpg.create_pool(
-            dsn,
-            ssl=ssl_context,
-            min_size=5,
-            max_size=20,
-            command_timeout=60
-        )
-        ctx.request_context.lifespan_context.pool = pool
-        ctx.request_context.lifespan_context.dsn = dsn
-        ctx.request_context.lifespan_context.current_database = database
-
+        pool = await CockroachConnectionPool.get_connection_pool()
         # Test connection
         async with pool.acquire() as conn:
             version = await conn.fetchval("SELECT version()")
+            database = await conn.fetchval("SELECT current_database()")
 
-        #self.server.current_database = database
-
+        ctx.request_context.lifespan_context.current_database = database
         return {
             "success": True,
-            "message": f"Connected to CockroachDB at {host}:{port}/{database}",
+            "message": f"Connected to CockroachDB with DSN: {CockroachConnectionPool.dsn}",
             "server_version": version,
             "current_database": database
         }
@@ -78,6 +32,56 @@ async def connect_database(ctx: Context, host: str, port: int = 26257, database:
         }
 
 @mcp.tool()
+async def connect_database(ctx: Context, host: str, database: str, port: int, username: str, password: str, 
+                                sslmode: str, sslcert: str, sslkey: str, sslrootcert: str) -> Dict[str, Any]:
+    """Connect to a CockroachDB database and create a connection pool.
+
+    Args:
+        host (str): CockroachDB host.
+        port (int): CockroachDB port (default: 26257).
+        database (str): Database name (default: "defaultdb").
+        username (str): Username (default: "root").
+        password (str): Password.
+        sslmode (str): SSL mode (default: disable - Possible values: allow, prefer, require, verify-ca, verify-full).
+        sslcert (str): Path to user certificate file.
+        sslkey (str): Path to user key file.
+        sslrootcert (str): Path to CA certificate file.
+
+    Returns:
+        A success message or an error message.
+    """
+    try:
+        pool = await CockroachConnectionPool.refresh_connection_pool(
+            host=host,
+            port=port or 26257,
+            database=database or 'defaultdb',
+            username=username or 'root',
+            password=password,
+            sslmode=sslmode or 'disable',
+            sslcert=sslcert,
+            sslkey=sslkey,
+            sslrootcert=sslrootcert
+        )
+        # Test connection
+        async with pool.acquire() as conn:
+            version = await conn.fetchval("SELECT version()")
+            database = await conn.fetchval("SELECT current_database()")
+
+        ctx.request_context.lifespan_context.current_database = database
+        return {
+            "success": True,
+            "message": f"Connected to CockroachDB with DSN: {CockroachConnectionPool.dsn}",
+            "server_version": version,
+            "current_database": database
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+    
+@mcp.tool()
 async def list_databases(ctx: Context) -> Dict[str, Any]:
     """List all databases in the CockroachDB cluster.
 
@@ -85,7 +89,7 @@ async def list_databases(ctx: Context) -> Dict[str, Any]:
         A list of databases with row count or an error message.
     """
 
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
 
@@ -116,7 +120,7 @@ async def get_connection_status(ctx: Context) -> Dict[str, Any]:
         The connection status or an error message.
     """
 
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         return {"connected": False}
 
@@ -155,9 +159,7 @@ async def switch_database(ctx: Context, database: str) -> Dict[str, Any]:
     Returns:
         A success message or an error message.
     """
-
-    pool = ctx.request_context.lifespan_context.pool
-    dns = ctx.request_context.lifespan_context.dns
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
 
@@ -167,19 +169,12 @@ async def switch_database(ctx: Context, database: str) -> Dict[str, Any]:
 
         # Create new pool with different database
         # Extract connection info from current pool
-        dsn_parts = str(dns).split('/')
+        dsn_parts = str(CockroachConnectionPool.dsn).split('/')
         base_dsn = '/'.join(dsn_parts[:-1])
         new_dsn = f"{base_dsn}/{database}"
 
-        ctx.request_context.lifespan_context.pool = await asyncpg.create_pool(
-            new_dsn,
-            min_size=5,
-            max_size=20,
-            command_timeout=60
-        )
-
-        ctx.request_context.lifespan_context.database = database
-        ctx.request_context.lifespan_context.dns = new_dsn
+        pool = await CockroachConnectionPool.create_connection_pool(new_dsn)
+        ctx.request_context.lifespan_context.current_database = database
 
         return {
             "success": True,
@@ -200,7 +195,7 @@ async def get_active_connections(ctx: Context) -> Dict[str, Any]:
     Returns:
         Active sessions on the cluster.
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     try:
@@ -233,7 +228,7 @@ async def get_database_settings(ctx: Context) -> Dict[str, Any]:
     Returns:
         All cluster settings.
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     try:
@@ -257,7 +252,7 @@ async def create_database(ctx: Context, database_name: str) -> Dict[str, Any]:
     Returns:
         A success message or an error message.
     """
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     try:
@@ -277,13 +272,13 @@ async def drop_database(ctx: Context, database_name: str) -> Dict[str, Any]:
     Returns:
         A success message or an error message.
     """
-    current_database: str = ctx.request_context.lifespan_context.database
+    current_database: str = ctx.request_context.lifespan_context.current_database
     if(database_name == 'defaultdb'):
         return {"success": False, "error": "Cannot drop the default database."}
     if(database_name.lower() == current_database.lower()):
         await switch_database(ctx, 'defaultdb')
 
-    pool = ctx.request_context.lifespan_context.pool
+    pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
     try:
