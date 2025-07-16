@@ -24,6 +24,7 @@ The CockroachDB MCP Server is a **natural language interface** designed for LLMs
   - [Configuration via command line arguments](#configuration-via-command-line-arguments)
   - [Configuration via Environment Variables](#configuration-via-environment-variables)
 - [Integrations](#integrations)
+  - [OpenAI Agents SDK](#openai-agents-sdk)
   - [Augment](#augment)
   - [Claude Desktop](#claude-desktop)
   - [VS Code with GitHub Copilot](#vs-code-with-github-copilot)
@@ -300,6 +301,30 @@ This method is helpful for temporary overrides or quick testing.
 ## Integrations
 
 Integrating this MCP Server with development frameworks like OpenAI Agents SDK or using tools like Claude Desktop, VS Code, or Augment is described in the following sections.
+
+### OpenAI Agents SDK
+
+Integrate this MCP Server with the OpenAI Agents SDK. Read the [documents](https://openai.github.io/openai-agents-python/mcp/) to learn more about the integration of the SDK with MCP.
+
+Install the Python SDK.
+
+```commandline
+pip install openai-agents
+```
+
+Configure the OpenAI token:
+
+```commandline
+export OPENAI_API_KEY="<openai_token>"
+```
+
+And run the [application](./examples/cockroachdb_assistant.py).
+
+```commandline
+python3 examples/cockroachdb_assistant.py
+```
+
+You can troubleshoot your agent workflows using the [OpenAI dashboard](https://platform.openai.com/traces/).
 
 ### Augment
 
