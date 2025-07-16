@@ -12,6 +12,10 @@ The CockroachDB MCP Server is a **natural language interface** designed for LLMs
 - [Overview](#overview)
 - [Features](#features)
 - [Tools](#tools)
+  - [Cluster Management](#cluster-management)
+  - [Database Management](#database-management)
+  - [Table Management](#table-management)
+  - [Query Engine](#query-engine)
 - [Installation](#installation)
   - [Quick Start with uvx](#quick-start-with-uvx)
   - [Development Installation](#development-installation)
@@ -23,10 +27,10 @@ The CockroachDB MCP Server is a **natural language interface** designed for LLMs
   - [Augment](#augment)
   - [Claude Desktop](#claude-desktop)
   - [VS Code with GitHub Copilot](#vs-code-with-github-copilot)
+  - [Cursor](#cursor)
 - [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
-- [Badges](#badges)
 - [Contact](#contact)
 
 ## Features
@@ -402,6 +406,12 @@ Alternatively, you can start the server using `uv` and configure your `mcp.json`
 ```
 
 For more information, see the [VS Code documentation](https://code.visualstudio.com/docs/copilot/chat/mcp-servers).
+
+### Cursor
+
+Read the configuration options [here](#configuration-via-environment-variables) and input your selections with this link:
+
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=cockroachdb&config=JTdCJTIyY29tbWFuZCUyMiUzQSUyMmRvY2tlciUyMHJ1biUyMC1pJTIwLS1ybSUyMC1lJTIwQ1JEQl9IT1NUJTIwLWUlMjBDUkRCX1BPUlQlMjAtZSUyMENSREJfREFUQUJBU0UlMjAtZSUyMENSREJfVVNFUk5BTUUlMjAtZSUyMENSREJfU1NMX01PREUlMjAtZSUyMENSREJfU1NMX0NBX1BBVEglMjAtZSUyMENSREJfU1NMX0tFWUZJTEUlMjAtZSUyMENSREJfU1NMX0NFUlRGSUxFJTIwLWUlMjBDUkRCX1BXRCUyMG1jcCUyRmNvY2tyb2FjaGRiJTIyJTJDJTIyZW52JTIyJTNBJTdCJTIyQ1JEQl9IT1NUJTIyJTNBJTIyMTI3LjAuMC4xJTIyJTJDJTIyQ1JEQl9QT1JUJTIyJTNBJTIyMjYyNTclMjIlMkMlMjJDUkRCX0RBVEFCQVNFJTIyJTNBJTIyZGVmYXVsdGRiJTIyJTJDJTIyQ1JEQl9VU0VSTkFNRSUyMiUzQSUyMnJvb3QlMjIlMkMlMjJDUkRCX1NTTF9NT0RFJTIyJTNBJTIyZGlzYWJsZSUyMiUyQyUyMkNSREJfU1NMX0NBX1BBVEglMjIlM0ElMjIlMjIlMkMlMjJDUkRCX1NTTF9LRVlGSUxFJTIyJTNBJTIyJTIyJTJDJTIyQ1JEQl9TU0xfQ0VSVEZJTEUlMjIlM0ElMjIlMjIlMkMlMjJDUkRCX1BXRCUyMiUzQSUyMiUyMiU3RCU3RA%3D%3D)
 
 ## Testing
 
