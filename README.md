@@ -40,8 +40,11 @@ The CockroachDB MCP Server is a **natural language interface** designed for LLMs
 
 ## Tools
 
-This MCP Server provides tools to manage the data stored in CockroachDB.
+The CockroachDB MCP Server Server provides tools to manage the data stored in CockroachDB. 
 
+![archotecture](https://github.com/user-attachments/assets/3d5d9884-9a2a-44f9-ae93-a3466d034713)
+
+The tools are organized into four main categories:
 
 ### Cluster Management
 
