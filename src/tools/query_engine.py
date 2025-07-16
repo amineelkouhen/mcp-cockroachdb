@@ -24,7 +24,10 @@ async def execute_query(ctx: Context, query: str, params: Optional[List] = None,
     query_history = ctx.request_context.lifespan_context.query_history
     if not pool:
         raise Exception("Not connected to database")
-    
+
+    if not query:
+        raise Exception("Query is Empty")
+
     start_time = time.time()
     
     try:
@@ -145,6 +148,15 @@ async def explain_query(ctx: Context, query: str, analyze: bool = False) -> Dict
             rows = await conn.fetch(explain_query)
         
         plan_text = "\n".join([row.get('info', row.get('plan', '')) for row in rows])
+        if analyze:
+             # Add to query history
+            query_history = ctx.request_context.lifespan_context.query_history
+            query_history.append({
+                "query": query,
+                "timestamp": datetime.now().isoformat(),
+                "row_count": len(rows),
+                "success": True
+            })
         
         return {
             "success": True,
@@ -158,6 +170,102 @@ async def explain_query(ctx: Context, query: str, analyze: bool = False) -> Dict
             "success": False,
             "error": str(e)
         }
+
+@mcp.tool()   
+async def analyze_performance(ctx: Context, query: str, time_range: str = "1:0") -> Dict[str, Any]:
+    '''Analyze query performance statistics for a given query or time range.
+    
+    Args:
+        query (str): Query string to filter (default: "").
+        time_range (str): Time range for analysis (default: '1:0', format: 'minutes:seconds').
+    
+    Returns:
+        Statistics about performance and latency (e.g., P50, P99).
+    '''
+    pool = await CockroachConnectionPool.get_connection_pool()
+    if not pool:
+        raise Exception("Not connected to database")
+
+    try:
+        async with pool.acquire() as conn:
+            if query:
+                # Analyze specific query
+                perf_query = f"""
+                SELECT 
+                aggregated_ts,
+                query, 
+                full_scan,
+                follower_read,
+                execution_count,
+                max_latency,
+                min_latency,
+                p50_latency,
+                p90_latency,
+                p99_latency,
+                avg_rows_read,
+                avg_rows_written
+                FROM
+                (SELECT 
+                    aggregated_ts,
+                    json_extract_path_text(metadata, 'query') as query, 
+                    cast(json_extract_path_text(metadata, 'fullScan') as BOOL) as full_scan, 
+                    cast(json_extract_path_text(statistics, 'statistics', 'cnt') as INT) as execution_count,
+                    cast(json_extract_path_text(statistics, 'statistics', 'usedFollowerRead') as BOOL) as follower_read,
+                    cast(json_extract_path_text(statistics, 'statistics', 'latencyInfo', 'max') as FLOAT) as max_latency,
+                    cast(json_extract_path_text(statistics, 'statistics', 'latencyInfo', 'min') as FLOAT) as min_latency,
+                    cast(json_extract_path_text(statistics, 'statistics', 'latencyInfo', 'p50') as FLOAT) as p50_latency,
+                    cast(json_extract_path_text(statistics, 'statistics', 'latencyInfo', 'p90') as FLOAT) as p90_latency,                       
+                    cast(json_extract_path_text(statistics, 'statistics', 'latencyInfo', 'p99') as FLOAT) as p99_latency,
+                    cast(json_extract_path_text(statistics, 'statistics', 'rowsRead', 'mean') as FLOAT) as avg_rows_read,
+                    cast(json_extract_path_text(statistics, 'statistics', 'rowsWritten', 'mean') as FLOAT) as avg_rows_written
+                FROM crdb_internal.statement_statistics)
+                WHERE LOWER(query) LIKE LOWER('%{query}%')
+                AND aggregated_ts >= now() - INTERVAL '{time_range}'
+                """
+            else:
+                # General performance stats
+                perf_query = f"""
+                SELECT 
+                aggregated_ts,
+                query, 
+                full_scan,
+                follower_read,
+                execution_count,
+                max_latency,
+                min_latency,
+                p50_latency,
+                p90_latency,
+                p99_latency,
+                avg_rows_read,
+                avg_rows_written
+                FROM
+                (SELECT 
+                    aggregated_ts,
+                    json_extract_path_text(metadata, 'query') as query, 
+                    cast(json_extract_path_text(metadata, 'fullScan') as BOOL) as full_scan, 
+                    cast(json_extract_path_text(statistics, 'statistics', 'cnt') as INT) as execution_count,
+                    cast(json_extract_path_text(statistics, 'statistics', 'usedFollowerRead') as BOOL) as follower_read,
+                    cast(json_extract_path_text(statistics, 'statistics', 'latencyInfo', 'max') as FLOAT) as max_latency,
+                    cast(json_extract_path_text(statistics, 'statistics', 'latencyInfo', 'min') as FLOAT) as min_latency,
+                    cast(json_extract_path_text(statistics, 'statistics', 'latencyInfo', 'p50') as FLOAT) as p50_latency,
+                    cast(json_extract_path_text(statistics, 'statistics', 'latencyInfo', 'p90') as FLOAT) as p90_latency,                       
+                    cast(json_extract_path_text(statistics, 'statistics', 'latencyInfo', 'p99') as FLOAT) as p99_latency,
+                    cast(json_extract_path_text(statistics, 'statistics', 'rowsRead', 'mean') as FLOAT) as avg_rows_read,
+                    cast(json_extract_path_text(statistics, 'statistics', 'rowsWritten', 'mean') as FLOAT) as avg_rows_written
+                FROM crdb_internal.statement_statistics)
+                WHERE aggregated_ts >= now() - INTERVAL '{time_range}'
+                ORDER BY max_latency DESC
+                LIMIT 20
+                """
+            
+            rows = await conn.fetch(perf_query)
+            return {
+                "success": True,
+                "performance_data": [dict(row) for row in rows]
+            }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 
 @mcp.tool()     
 async def get_query_history(ctx : Context, limit: int = 10) -> Dict[str, Any]:

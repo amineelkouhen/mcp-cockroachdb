@@ -11,7 +11,7 @@ class CockroachConnectionPool:
     @classmethod
     async def get_connection_pool(cls) -> asyncpg.Pool:
         database_url = create_default_url()
-        if cls._instance is None:
+        if not cls._instance or (cls._instance and cls._instance._closed):
             try:
                 cls._instance = await asyncpg.create_pool(
                     database_url,
