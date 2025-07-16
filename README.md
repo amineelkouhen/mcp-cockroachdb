@@ -12,8 +12,8 @@ The CockroachDB MCP Server is a **natural language interface** designed for LLMs
 - [Overview](#overview)
 - [Features](#features)
 - [Tools](#tools)
-  - [Cluster Management](#cluster-management)
-  - [Database Management](#database-management)
+  - [Cluster Monitoring](#cluster-monitoring)
+  - [Database Operations](#database-operations)
   - [Table Management](#table-management)
   - [Query Engine](#query-engine)
 - [Installation](#installation)
@@ -37,8 +37,8 @@ The CockroachDB MCP Server is a **natural language interface** designed for LLMs
 ## Features
 - **Natural Language Queries**: Enables AI agents to query and create transactions using natural language, supporting complex workflows.
 - **Search & Filtering**: Supports efficient data retrieval and searching in CockroachDB.
-- **Cluster Management**: Check and monitor the CockroachDB cluster status, including node health and replication.
-- **Database Management**: Perform all operations related to databases, such as creation, deletion, and configuration.
+- **Cluster Monitoring**: Check and monitor the CockroachDB cluster status, including node health and replication.
+- **Database Operations**: Perform all operations related to databases, such as creation, deletion, and configuration.
 - **Table Management**: Handle tables, indexes, and schemas for flexible data modeling.
 - **Seamless MCP Integration**: Works with any **MCP client** for smooth communication.
 - **Scalable & Lightweight**: Designed for **high-performance** data operations.
@@ -51,7 +51,7 @@ The CockroachDB MCP Server Server provides tools to manage the data stored in Co
 
 The tools are organized into four main categories:
 
-### Cluster Management
+### Cluster Monitoring
 
 Purpose:
 Provides tools for monitoring and managing CockroachDB clusters.
@@ -62,7 +62,7 @@ Summary:
 - Analyze query performance statistics.
 - Retrieve replication and distribution status for tables or the whole database.
 
-### Database Management
+### Database Operations
 
 Purpose:
 Handles database-level operations and connection management.
