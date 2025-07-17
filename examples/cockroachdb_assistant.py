@@ -15,7 +15,7 @@ async def main():
                 "run", "src/main.py"
             ],
         "env": {
-            "CRDB_HOST": "nlb-20250516154447737700000007-27042aa4022d3b9a.elb.us-east-1.amazonaws.com",
+            "CRDB_HOST": "127.0.0.1",
             "CRDB_PORT": "26257",
             "CRDV_USERNAME": "root",
             "CRDB_PWD": "",
