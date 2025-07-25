@@ -32,6 +32,7 @@ The CockroachDB MCP Server is a **natural language interface** designed for LLMs
 - [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
+- [Quality Badge](#quality-badge)
 - [Contact](#contact)
 
 ## Features
@@ -454,6 +455,12 @@ npx @modelcontextprotocol/inspector uv run src/main.py
 
 ## License
 This project is licensed under the **MIT License**.
+
+## Quality Badge
+
+<a href="https://glama.ai/mcp/servers/@amineelkouhen/mcp-cockroach">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@amineelkouhen/mcp-cockroach/badge" />
+</a>
 
 ## Contact
 If you have any questions or need support, please feel free to contact us through [GitHub Issues](https://github.com/amineelkouhen/mcp-cockroachdb/issues).
