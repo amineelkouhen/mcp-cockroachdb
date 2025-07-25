@@ -215,7 +215,7 @@ Finally, configure the client to create the container at start-up. An example fo
 }
 ```
 
-To use the [CockroachDB MCP Docker](https://hub.docker.com/r/mcp/cockroachdb) image, just replace your image name (`mcp-cockroachdb` in the example above) with `mcp/cockroachdb`.
+To use the [CockroachDB MCP Docker](https://hub.docker.com/mcp/server/cockroachdb) image, just replace your image name (`mcp-cockroachdb` in the example above) with `mcp/cockroachdb`.
 
 ## Configuration
 
