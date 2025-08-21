@@ -1,6 +1,8 @@
 # CockroachDB MCP Server
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.13%2B-blue)](https://www.python.org/downloads/)
+
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/amineelkouhen/mcp-cockroachdb)](https://archestra.ai/mcp-catalog/amineelkouhen__mcp-cockroachdb)
 [![smithery badge](https://smithery.ai/badge/@amineelkouhen/mcp-cockroachdb)](https://smithery.ai/server/@amineelkouhen/mcp-cockroachdb)
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-blue)](https://mcp.so/server/cockroachdb-mcp-server/cockroachdb)
 
