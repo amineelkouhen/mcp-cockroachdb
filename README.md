@@ -1,10 +1,8 @@
 # CockroachDB MCP Server
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.13%2B-blue)](https://www.python.org/downloads/)
-
-[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/amineelkouhen/mcp-cockroachdb)](https://archestra.ai/mcp-catalog/amineelkouhen__mcp-cockroachdb)
-[![smithery badge](https://smithery.ai/badge/@amineelkouhen/mcp-cockroachdb)](https://smithery.ai/server/@amineelkouhen/mcp-cockroachdb)
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-blue)](https://mcp.so/server/cockroachdb-mcp-server/cockroachdb)
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/amineelkouhen/mcp-cockroachdb)](https://archestra.ai/mcp-catalog/amineelkouhen__mcp-cockroachdb)
 
 ## Overview
 
@@ -368,12 +366,6 @@ The simplest way to configure MCP clients is using `uvx`. Add the following JSON
         }
     }
 }
-```
-
-If you'd like to test the [CockroachDB MCP Server](https://smithery.ai/server/@amineelkouhen/mcp-cockroachdb) via Smithery, you can configure Claude Desktop automatically:
-
-```bash
-npx -y @smithery/cli install @amineelkouhen/mcp-cockroachdb --client claude
 ```
 
 Please follow the prompt and give the details to configure the server and connect to CockroachDB (e.g., using a managed CockroachDB instance).

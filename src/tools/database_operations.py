@@ -17,10 +17,9 @@ async def connect(ctx: Context) -> Dict[str, Any]:
             version = await conn.fetchval("SELECT version()")
             database = await conn.fetchval("SELECT current_database()")
 
-        ctx.request_context.lifespan_context.current_database = database
         return {
             "success": True,
-            "message": f"Connected to CockroachDB with DSN: {CockroachConnectionPool.dsn}",
+            "message": f"Connected to CockroachDB with DSN: {CockroachConnectionPool.database_url}",
             "server_version": version,
             "current_database": database
         }
@@ -67,10 +66,9 @@ async def connect_database(ctx: Context, host: str, database: str, port: int, us
             version = await conn.fetchval("SELECT version()")
             database = await conn.fetchval("SELECT current_database()")
 
-        ctx.request_context.lifespan_context.current_database = database
         return {
             "success": True,
-            "message": f"Connected to CockroachDB with DSN: {CockroachConnectionPool.dsn}",
+            "message": f"Connected to CockroachDB with DSN: {CockroachConnectionPool.database_url}",
             "server_version": version,
             "current_database": database
         }
@@ -169,16 +167,23 @@ async def switch_database(ctx: Context, database: str) -> Dict[str, Any]:
 
         # Create new pool with different database
         # Extract connection info from current pool
-        dsn_parts = str(CockroachConnectionPool.dsn).split('/')
+        dsn_parts = CockroachConnectionPool.database_url.split('/')
+        old_database = CockroachConnectionPool.current_database
         base_dsn = '/'.join(dsn_parts[:-1])
-        new_dsn = f"{base_dsn}/{database}"
+        old_path = dsn_parts[-1]
+        if "?" in old_path:
+            query = old_path[old_path.index("?"):] 
+        else: 
+            query = ""
+        
+        new_dsn = f"{base_dsn}/{database}{query}"
 
         pool = await CockroachConnectionPool.create_connection_pool(new_dsn)
-        ctx.request_context.lifespan_context.current_database = database
+        new_database = CockroachConnectionPool.current_database
 
         return {
             "success": True,
-            "message": f"Switched to database: {database}",
+            "message": f"Switched from {old_database} to {new_database}",
             "current_database": database
         }
 
@@ -272,18 +277,21 @@ async def drop_database(ctx: Context, database_name: str) -> Dict[str, Any]:
     Returns:
         A success message or an error message.
     """
-    current_database: str = ctx.request_context.lifespan_context.current_database
+
     if(database_name == 'defaultdb'):
         return {"success": False, "error": "Cannot drop the default database."}
-    if(database_name.lower() == current_database.lower()):
+    
+    if(database_name.lower() == CockroachConnectionPool.current_database.lower()):
         await switch_database(ctx, 'defaultdb')
 
     pool = await CockroachConnectionPool.get_connection_pool()
     if not pool:
         raise Exception("Not connected to database")
+    
     try:
         async with pool.acquire() as conn:
             await conn.execute(f'DROP DATABASE IF EXISTS "{database_name.lower()}" CASCADE')
         return {"success": True, "message": f"Database '{database_name.lower()}' dropped."}
+    
     except Exception as e:
         return {"success": False, "error": str(e)}
