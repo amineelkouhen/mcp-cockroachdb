@@ -120,7 +120,6 @@ async def get_replication_status(ctx: Context, table_name: str) -> Dict[str, Any
                 """
             else:
                 # General replication status
-                current_database = ctx.request_context.lifespan_context.current_database
                 query = """
                 SELECT 
                     r.range_id,
@@ -129,7 +128,7 @@ async def get_replication_status(ctx: Context, table_name: str) -> Dict[str, Any
                     r.replica_localities,
                     r.lease_holder,
                     r.range_size
-                FROM [SHOW RANGES FROM DATABASE """ + current_database + """] d
+                FROM [SHOW RANGES FROM DATABASE """ + CockroachConnectionPool.current_database + """] d
                 left join  crdb_internal.ranges r
                 on r.range_id = d.range_id
                 """

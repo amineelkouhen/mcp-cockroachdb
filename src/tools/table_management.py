@@ -248,7 +248,7 @@ async def describe_table(ctx: Context, table_name: str, db_schema: str = "public
         Table details including columns, constraints, indexes, and metadata.
     """
     pool = await CockroachConnectionPool.get_connection_pool()
-    database = ctx.request_context.lifespan_context.current_database
+    database = CockroachConnectionPool.current_database
     if not pool:
         raise Exception("Not connected to database")
     

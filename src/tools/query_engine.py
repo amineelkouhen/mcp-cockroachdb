@@ -21,7 +21,7 @@ async def execute_query(ctx: Context, query: str, params: Optional[List] = None,
     '''
     
     pool = await CockroachConnectionPool.get_connection_pool()
-    query_history = ctx.request_context.lifespan_context.query_history
+    query_history = CockroachConnectionPool.query_history
     if not pool:
         raise Exception("Not connected to database")
 
@@ -150,9 +150,9 @@ async def explain_query(ctx: Context, query: str, analyze: bool = False) -> Dict
         plan_text = "\n".join([row.get('info', row.get('plan', '')) for row in rows])
         if analyze:
              # Add to query history
-            query_history = ctx.request_context.lifespan_context.query_history
+            query_history = CockroachConnectionPool.query_history
             query_history.append({
-                "query": query,
+                "query": explain_query,
                 "timestamp": datetime.now().isoformat(),
                 "row_count": len(rows),
                 "success": True
@@ -278,7 +278,7 @@ async def get_query_history(ctx : Context, limit: int = 10) -> Dict[str, Any]:
         A list of the last executed queries.
     '''
     
-    query_history = ctx.request_context.lifespan_context.query_history
+    query_history = CockroachConnectionPool.query_history
     return {
         "history": sorted(
             query_history[-limit:],
