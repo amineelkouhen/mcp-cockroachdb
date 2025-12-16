@@ -2,13 +2,11 @@ import sys
 import click
 from src.common.config import parse_crdb_uri, set_crdb_config_from_cli
 from src.common.server import mcp
-from smithery.decorators import smithery
 
 class CockroachMCPServer:
     def __init__(self):
         print("Starting the CockroachDB MCP Server", file=sys.stderr)
 
-    @smithery.server
     def run(self):
         if mcp:
             mcp.run()
