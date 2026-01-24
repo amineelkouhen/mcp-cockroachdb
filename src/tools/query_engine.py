@@ -1,9 +1,34 @@
 import time
+import json
 from src.common.connection import CockroachConnectionPool
 from typing import Dict, Any, List, Optional, Union
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
+from uuid import UUID
 from mcp.server.fastmcp import Context
 from src.common.server import mcp
+
+
+def serialize_value(value: Any) -> Any:
+    """Convert non-JSON-serializable types to serializable ones."""
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    elif isinstance(value, Decimal):
+        return float(value)
+    elif isinstance(value, UUID):
+        return str(value)
+    elif isinstance(value, bytes):
+        return value.decode('utf-8', errors='replace')
+    elif isinstance(value, dict):
+        return {k: serialize_value(v) for k, v in value.items()}
+    elif isinstance(value, (list, tuple)):
+        return [serialize_value(v) for v in value]
+    return value
+
+
+def serialize_row(row: Dict) -> Dict:
+    """Serialize all values in a row dictionary."""
+    return {k: serialize_value(v) for k, v in row.items()}
 
 @mcp.tool()
 async def execute_query(ctx: Context, query: str, params: Optional[List] = None, 
@@ -52,12 +77,15 @@ async def execute_query(ctx: Context, query: str, params: Optional[List] = None,
             "success": True
         })
         
+        # Serialize rows to handle datetime and other non-JSON types
+        serialized_rows = [serialize_row(dict(row)) for row in rows]
+        
         # Format results
-        formatted_result = format_result([dict(row) for row in rows], format)
+        formatted_result = format_result(serialized_rows, format)
         
         return {
             "success": True,
-            "rows": [dict(row) for row in rows],
+            "rows": serialized_rows,
             "row_count": len(rows),
             "duration": duration,
             "columns": list(dict(rows[0]).keys()) if rows else [],
@@ -108,7 +136,7 @@ async def execute_transaction(ctx: Context, queries: List[str]) -> Dict[str, Any
                     results.append({
                         "query": query,
                         "row_count": len(rows),
-                        "rows": [dict(row) for row in rows]
+                        "rows": [serialize_row(dict(row)) for row in rows]
                     })
                 
                 return {
@@ -160,7 +188,7 @@ async def explain_query(ctx: Context, query: str, analyze: bool = False) -> Dict
         
         return {
             "success": True,
-            "plan": [dict(row) for row in rows],
+            "plan": [serialize_row(dict(row)) for row in rows],
             "plan_text": plan_text,
             "analyzed": analyze
         }
@@ -261,7 +289,7 @@ async def analyze_performance(ctx: Context, query: str, time_range: str = "1:0")
             rows = await conn.fetch(perf_query)
             return {
                 "success": True,
-                "performance_data": [dict(row) for row in rows]
+                "performance_data": [serialize_row(dict(row)) for row in rows]
             }
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -316,7 +344,6 @@ def format_result(rows: List[Dict], format: str) -> Union[str, List[Dict]]:
         return "\n".join(csv_lines)
     
     elif format == "json":
-        import json
         return json.dumps(rows, indent=2)
     
     elif format == "table":

@@ -62,6 +62,11 @@ Summary:
 - Show currently running queries.
 - Analyze query performance statistics.
 - Retrieve replication and distribution status for tables or the whole database.
+- Get query execution insights with optional keyword filtering.
+- Find slow queries from statement statistics with optional keyword filtering.
+- Get transaction execution insights with optional keyword filtering.
+- View contention events with optional table filtering.
+- Get index recommendations from query insights.
 
 ### Database Operations
 
@@ -191,6 +196,24 @@ You can troubleshoot problems by tailing the log file.
 
 ```commandline
 tail -f ~/Library/Logs/Claude/mcp-server-cockroach.log
+```
+
+### With Docker Compose (Local Development)
+
+For local development and testing, use the provided `docker-compose.yaml` to spin up both CockroachDB and the MCP server:
+
+```bash
+# Start CockroachDB and MCP server
+docker compose up -d
+
+# The MCP server is available at http://localhost:8000/mcp/
+# CockroachDB UI is available at http://localhost:8080
+
+# View logs
+docker compose logs -f mcp-server
+
+# Stop and clean up
+docker compose down -v
 ```
 
 ### With Docker

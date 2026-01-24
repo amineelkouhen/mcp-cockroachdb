@@ -1,0 +1,35 @@
+services:
+  cockroachdb:
+    image: cockroachdb/cockroach:latest-v25.4
+    command: start-single-node --insecure
+    ports:
+      - "26257:26257"
+      - "8080:8080"
+    volumes:
+      - cockroach-data:/cockroach/cockroach-data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - CRDB_HOST=cockroachdb
+      - CRDB_PORT=26257
+      - CRDB_DATABASE=defaultdb
+      - CRDB_USERNAME=root
+      - CRDB_SSL_MODE=disable
+    command: ["--use-env", "--transport", "http", "--http-host", "0.0.0.0", "--http-port", "8000"]
+    depends_on:
+      cockroachdb:
+        condition: service_healthy
+
+volumes:
+  cockroach-data:
