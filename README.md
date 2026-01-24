@@ -99,7 +99,7 @@ Summary:
 
 ## Installation
 
-The CockroachDB MCP Server supports the `stdio` [transport](https://modelcontextprotocol.io/docs/concepts/transports#standard-input%2Foutput-stdio). Support for the `streamable-http` transport will be added in a future release.
+The CockroachDB MCP Server supports the `stdio` [transport](https://modelcontextprotocol.io/docs/concepts/transports#standard-input%2Foutput-stdio) and the `streamable-http` transport.
 
 ### Quick Start with uvx 
 
@@ -121,6 +121,14 @@ uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-
 
 # See all options
 uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server --help
+
+# Run with streamable HTTP transport
+uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server \
+  --url postgresql://localhost:26257/defaultdb \
+  --transport http \
+  --http-host 0.0.0.0 \
+  --http-port 8000 \
+  --http-path /mcp
 ```
 
 ### Development Installation
@@ -259,6 +267,12 @@ uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-
 - `--ssl-key` - Path to SSL Client key file
 - `--ssl-cert` - Path to SSL Client certificate file
 - `--ssl-ca-cert` - Path to CA (Root) certificate file'
+- `--transport` - MCP transport to use (`stdio` or `http`)
+- `--http-host` - HTTP host to bind for streamable HTTP transport
+- `--http-port` - HTTP port to bind for streamable HTTP transport
+- `--http-path` - HTTP path for streamable HTTP transport (e.g., /mcp)
+- `--stateless-http` - Enable stateless HTTP mode for horizontal scaling
+- `--use-env` - Use environment variables for CockroachDB configuration
 
 ### Configuration via Environment Variables
 

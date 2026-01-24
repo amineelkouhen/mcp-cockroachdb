@@ -11,8 +11,21 @@ class CockroachMCPServer:
     def __init__(self):
         print("Starting the CockroachDB MCP Server", file=sys.stderr)
 
-    def run(self):
-        if mcp:
+    def run(self, transport: str, http_host: str | None, http_port: int | None,
+            http_path: str | None, stateless_http: bool):
+        if not mcp:
+            return
+        if transport == "http":
+            import uvicorn
+            # Get the Starlette app for streamable HTTP
+            app = mcp.streamable_http_app()
+            print(f"Starting HTTP server on {http_host or '0.0.0.0'}:{http_port or 8000}", file=sys.stderr)
+            uvicorn.run(
+                app,
+                host=http_host or "0.0.0.0",
+                port=http_port or 8000,
+            )
+        else:
             mcp.run()
 
 @click.command()
@@ -26,8 +39,15 @@ class CockroachMCPServer:
 @click.option('--ssl-key', help='Path to SSL Client key file')
 @click.option('--ssl-cert', help='Path to SSL Client certificate file')
 @click.option('--ssl-ca-cert', help='Path to CA (Root) certificate file')
+@click.option('--transport', type=click.Choice(['stdio', 'http']), default='stdio', show_default=True, help='MCP transport to use.')
+@click.option('--http-host', help='HTTP host to bind for streamable HTTP transport.')
+@click.option('--http-port', type=int, help='HTTP port to bind for streamable HTTP transport.')
+@click.option('--http-path', help='HTTP path for streamable HTTP transport (e.g., /mcp).')
+@click.option('--stateless-http/--stateful-http', default=False, show_default=True, help='Enable stateless HTTP mode for horizontal scaling.')
+@click.option('--use-env/--no-use-env', default=False, show_default=True, help='Use environment variables for CockroachDB configuration.')
 def cli(url, host, port, db, username, password,
-        ssl_mode, ssl_key, ssl_cert, ssl_ca_cert):
+        ssl_mode, ssl_key, ssl_cert, ssl_ca_cert,
+        transport, http_host, http_port, http_path, stateless_http, use_env):
     """CockroachDB MCP Server - Model Context Protocol server for CockroachDB."""
 
     # Handle CockroachDB URI if provided
@@ -59,18 +79,19 @@ def cli(url, host, port, db, username, password,
             cfg['ssl_ca_cert'] = ssl_ca_cert
     
         set_crdb_config_from_cli(cfg)
-    else: 
-        print(f"You are in CLI mode. You must fill in at least one of the two parameters --url or --host to launch the MCP server", file=sys.stderr)
-        sys.exit(1)
+    else:
+        if not use_env:
+            print(f"You are in CLI mode. You must fill in at least one of the two parameters --url or --host to launch the MCP server", file=sys.stderr)
+            sys.exit(1)
 
     # Start the server
     server = CockroachMCPServer()
-    server.run()
+    server.run(transport, http_host, http_port, http_path, stateless_http)
 
 def main():
     """Legacy main function for backward compatibility."""
     server = CockroachMCPServer()
-    server.run()
+    server.run("stdio", None, None, None, False)
 
 if __name__ == "__main__":
     main()
