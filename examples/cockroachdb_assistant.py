@@ -17,7 +17,7 @@ async def main():
         "env": {
             "CRDB_HOST": "127.0.0.1",
             "CRDB_PORT": "26257",
-            "CRDV_USERNAME": "root",
+            "CRDB_USERNAME": "root",
             "CRDB_PWD": "",
             "CRDB_DATABASE": "defaultdb",
             "CRDB_SSL_MODE": "disable"

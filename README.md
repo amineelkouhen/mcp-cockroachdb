@@ -62,6 +62,11 @@ Summary:
 - Show currently running queries.
 - Analyze query performance statistics.
 - Retrieve replication and distribution status for tables or the whole database.
+- Get query execution insights with optional keyword filtering.
+- Find slow queries from statement statistics with optional keyword filtering.
+- Get transaction execution insights with optional keyword filtering.
+- View contention events with optional table filtering.
+- Get index recommendations from query insights.
 
 ### Database Operations
 
@@ -99,7 +104,7 @@ Summary:
 
 ## Installation
 
-The CockroachDB MCP Server supports the `stdio` [transport](https://modelcontextprotocol.io/docs/concepts/transports#standard-input%2Foutput-stdio). Support for the `streamable-http` transport will be added in a future release.
+The CockroachDB MCP Server supports the `stdio` [transport](https://modelcontextprotocol.io/docs/concepts/transports#standard-input%2Foutput-stdio) and the `streamable-http` transport.
 
 ### Quick Start with uvx 
 
@@ -121,6 +126,14 @@ uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-
 
 # See all options
 uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server --help
+
+# Run with streamable HTTP transport
+uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-mcp-server \
+  --url postgresql://localhost:26257/defaultdb \
+  --transport http \
+  --http-host 0.0.0.0 \
+  --http-port 8000 \
+  --http-path /mcp
 ```
 
 ### Development Installation
@@ -183,6 +196,24 @@ You can troubleshoot problems by tailing the log file.
 
 ```commandline
 tail -f ~/Library/Logs/Claude/mcp-server-cockroach.log
+```
+
+### With Docker Compose (Local Development)
+
+For local development and testing, use the provided `docker-compose.yaml` to spin up both CockroachDB and the MCP server:
+
+```bash
+# Start CockroachDB and MCP server
+docker compose up -d
+
+# The MCP server is available at http://localhost:8000/mcp/
+# CockroachDB UI is available at http://localhost:8080
+
+# View logs
+docker compose logs -f mcp-server
+
+# Stop and clean up
+docker compose down -v
 ```
 
 ### With Docker
@@ -259,6 +290,12 @@ uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-
 - `--ssl-key` - Path to SSL Client key file
 - `--ssl-cert` - Path to SSL Client certificate file
 - `--ssl-ca-cert` - Path to CA (Root) certificate file'
+- `--transport` - MCP transport to use (`stdio` or `http`)
+- `--http-host` - HTTP host to bind for streamable HTTP transport
+- `--http-port` - HTTP port to bind for streamable HTTP transport
+- `--http-path` - HTTP path for streamable HTTP transport (e.g., /mcp)
+- `--stateless-http` - Enable stateless HTTP mode for horizontal scaling
+- `--use-env` - Use environment variables for CockroachDB configuration
 
 ### Configuration via Environment Variables
 
