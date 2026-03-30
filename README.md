@@ -4,6 +4,10 @@
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-blue)](https://mcp.so/server/cockroachdb-mcp-server/cockroachdb)
 [![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/amineelkouhen/mcp-cockroachdb)](https://archestra.ai/mcp-catalog/amineelkouhen__mcp-cockroachdb)
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/amineelkouhen-mcp-cockroachdb).
+
 ## Overview
 
 The CockroachDB MCP Server is a **natural language interface** designed for LLMs and agentic applications to manage, monitor, and query data in CockroachDB. It integrates seamlessly with **MCP (Model Content Protocol)** clients, such as Claude Desktop or Cursor, enabling AI-driven workflows to interact directly with your database. 
