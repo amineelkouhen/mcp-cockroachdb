@@ -32,6 +32,190 @@ ALLOWED_IMPORT_SCHEMES = frozenset({"s3", "azure-blob", "azure", "gs", "http", "
 # Allowed output formats for execute_query.
 ALLOWED_FORMATS = frozenset({"json", "csv", "table"})
 
+# Vector similarity metric → CockroachDB operator.
+VECTOR_METRIC_OPERATORS = {
+    "cosine": "<=>",  # cosine distance
+    "l2": "<->",  # Euclidean distance
+    "ip": "<#>",  # negative inner product (rank-equivalent for unit vectors)
+}
+ALLOWED_VECTOR_METRICS = frozenset(VECTOR_METRIC_OPERATORS.keys()) | {"auto"}
+
+# Vector index opclass per metric.
+VECTOR_METRIC_OPCLASS = {
+    "cosine": "vector_cosine_ops",
+    "l2": "vector_l2_ops",
+    "ip": "vector_ip_ops",
+}
+
+# Allowed SQL privileges that can be granted/revoked via tools.
+ALLOWED_PRIVILEGES = frozenset(
+    {
+        "ALL",
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "TRUNCATE",
+        "REFERENCES",
+        "TRIGGER",
+        "USAGE",
+        "CREATE",
+        "CONNECT",
+        "EXECUTE",
+        "BACKUP",
+        "RESTORE",
+        "ZONECONFIG",
+        "ADMIN",
+        "MODIFYCLUSTERSETTING",
+        "VIEWACTIVITY",
+        "VIEWCLUSTERMETADATA",
+        "VIEWCLUSTERSETTING",
+        "CANCELQUERY",
+        "NOSQLLOGIN",
+    }
+)
+
+# Allowed target objects for GRANT/REVOKE.
+ALLOWED_GRANT_TARGETS = frozenset({"DATABASE", "SCHEMA", "TABLE", "TYPE", "SEQUENCE", "FUNCTION"})
+
+# Survival goals for multi-region databases.
+ALLOWED_SURVIVAL_GOALS = frozenset({"ZONE", "REGION"})
+
+# Table locality settings.
+ALLOWED_LOCALITIES = frozenset({"REGIONAL", "REGIONAL_BY_ROW", "REGIONAL_BY_TABLE", "GLOBAL"})
+
+# Sink schemes for CREATE CHANGEFEED.
+ALLOWED_CHANGEFEED_SINKS = frozenset(
+    {
+        "kafka",
+        "webhook-https",
+        "webhook-http",
+        "s3",
+        "gs",
+        "azure-blob",
+        "azure",
+        "experimental-sql",
+        "external",
+        "null",
+    }
+)
+
+# Allowed BACKUP/RESTORE destination/source schemes.
+ALLOWED_BACKUP_SCHEMES = frozenset(
+    {"s3", "gs", "azure-blob", "azure", "nodelocal", "userfile", "external"}
+)
+
+# Allowed cluster setting types we expose for SET CLUSTER SETTING.
+# We do NOT validate the name here (admins know what they're doing); we just
+# refuse obvious shell-injection-shaped names downstream.
+_CLUSTER_SETTING_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]*$")
+
+
+def validate_cluster_setting_name(name: str) -> str:
+    """Validate a cluster-setting name (e.g. kv.gc.ttl_seconds)."""
+    if not isinstance(name, str) or not _CLUSTER_SETTING_NAME_RE.match(name):
+        raise UnsafeIdentifierError(f"Invalid cluster setting name {name!r}")
+    return name
+
+
+def validate_vector_metric(metric: str | None) -> str:
+    """Validate a vector similarity metric. Default 'cosine'."""
+    if not metric:
+        return "cosine"
+    if metric not in ALLOWED_VECTOR_METRICS:
+        raise UnsafeIdentifierError(
+            f"Invalid metric {metric!r}; allowed: {sorted(ALLOWED_VECTOR_METRICS)}"
+        )
+    return metric
+
+
+def validate_privilege(priv: str) -> str:
+    """Validate a SQL privilege name (uppercase)."""
+    if not isinstance(priv, str):
+        raise UnsafeIdentifierError(f"Privilege must be a string, got {type(priv).__name__}")
+    up = priv.upper()
+    if up not in ALLOWED_PRIVILEGES:
+        raise UnsafeIdentifierError(
+            f"Invalid privilege {priv!r}; allowed: {sorted(ALLOWED_PRIVILEGES)}"
+        )
+    return up
+
+
+def validate_grant_target(target: str) -> str:
+    """Validate a GRANT target type (DATABASE/SCHEMA/TABLE/...)."""
+    up = (target or "").upper()
+    if up not in ALLOWED_GRANT_TARGETS:
+        raise UnsafeIdentifierError(
+            f"Invalid grant target {target!r}; allowed: {sorted(ALLOWED_GRANT_TARGETS)}"
+        )
+    return up
+
+
+def validate_survival_goal(goal: str) -> str:
+    """Validate a survival goal (ZONE/REGION)."""
+    up = (goal or "").upper()
+    if up not in ALLOWED_SURVIVAL_GOALS:
+        raise UnsafeIdentifierError(
+            f"Invalid survival goal {goal!r}; allowed: {sorted(ALLOWED_SURVIVAL_GOALS)}"
+        )
+    return up
+
+
+def validate_locality(locality: str) -> str:
+    """Validate a table locality setting."""
+    up = (locality or "").upper().replace("-", "_")
+    if up not in ALLOWED_LOCALITIES:
+        raise UnsafeIdentifierError(
+            f"Invalid locality {locality!r}; allowed: {sorted(ALLOWED_LOCALITIES)}"
+        )
+    return up
+
+
+def validate_changefeed_sink(url: str) -> str:
+    """Validate a CHANGEFEED sink URI by scheme."""
+    import urllib.parse as _u
+
+    parsed = _u.urlparse(url)
+    if parsed.scheme not in ALLOWED_CHANGEFEED_SINKS:
+        raise UnsafeIdentifierError(
+            f"Unsupported changefeed sink scheme {parsed.scheme!r}; allowed: {sorted(ALLOWED_CHANGEFEED_SINKS)}"
+        )
+    return url
+
+
+def validate_backup_uri(url: str) -> str:
+    """Validate a BACKUP/RESTORE URI by scheme."""
+    import urllib.parse as _u
+
+    parsed = _u.urlparse(url)
+    if parsed.scheme not in ALLOWED_BACKUP_SCHEMES:
+        raise UnsafeIdentifierError(
+            f"Unsupported backup URI scheme {parsed.scheme!r}; allowed: {sorted(ALLOWED_BACKUP_SCHEMES)}"
+        )
+    return url
+
+
+def validate_node_id(node_id: int | str) -> int:
+    """Validate a node ID (positive integer)."""
+    try:
+        n = int(node_id)
+    except (TypeError, ValueError) as exc:
+        raise UnsafeIdentifierError(f"Invalid node_id {node_id!r}") from exc
+    if n < 1 or n > 100_000:
+        raise UnsafeIdentifierError(f"node_id out of range: {n}")
+    return n
+
+
+def validate_job_id(job_id: int | str) -> int:
+    """Validate a job ID (positive integer)."""
+    try:
+        n = int(job_id)
+    except (TypeError, ValueError) as exc:
+        raise UnsafeIdentifierError(f"Invalid job_id {job_id!r}") from exc
+    if n < 1:
+        raise UnsafeIdentifierError(f"job_id must be positive: {n}")
+    return n
+
 
 class UnsafeIdentifierError(ValueError):
     """Raised when an identifier fails validation."""

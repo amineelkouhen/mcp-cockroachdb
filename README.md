@@ -16,6 +16,15 @@ The CockroachDB MCP Server is a **natural language interface** designed for LLMs
   - [Database Operations](#database-operations)
   - [Table Management](#table-management)
   - [Query Engine](#query-engine)
+  - [User & Privilege Management](#user--privilege-management)
+  - [Vector Search](#vector-search)
+  - [Job Management](#job-management)
+  - [Backup & Restore](#backup--restore)
+  - [Statistics](#statistics)
+  - [Multi-Region](#multi-region)
+  - [Changefeeds](#changefeeds)
+  - [Cluster Admin](#cluster-admin)
+  - [Diagnostics](#diagnostics)
 - [Installation](#installation)
   - [Quick Start with uvx](#quick-start-with-uvx)
   - [Development Installation](#development-installation)
@@ -36,14 +45,23 @@ The CockroachDB MCP Server is a **natural language interface** designed for LLMs
 - [Contact](#contact)
 
 ## Features
-- **Natural Language Queries**: Enables AI agents to query and run transactions using natural language, supporting complex workflows.
-- **Cluster Monitoring**: Check cluster status, node health, replication, slow queries, contention, and index recommendations.
+- **Natural-Language Queries**: AI agents can query and transact via natural language.
+- **Cluster Monitoring**: Cluster status, node health, replication, slow queries, contention, index recommendations.
 - **Database Operations**: List, create, drop, and switch databases.
-- **Table Management**: Create and drop tables, indexes, and views; bulk-import data; analyze schema.
-- **Query Engine**: Execute SQL with formatting options, run multi-statement transactions, explain query plans, track query history.
-- **Safety First**: SQL identifier validation, parameterized values, optional `--read-only` mode, explicit `confirm=True` requirement for destructive operations, redacted DSN responses.
-- **Seamless MCP Integration**: Works with any **MCP client** (Claude Desktop, Cursor, VS Code Copilot, OpenAI Agents SDK, etc.).
-- **Multiple Transports**: stdio (default) and streamable HTTP for horizontal scaling.
+- **Table Management**: Create, drop, alter (add/drop/rename column), truncate, rename, describe; bulk-import; indexes, views, schemas.
+- **Query Engine**: Parameterized SQL with json/csv/table output, multi-statement transactions, explain, history.
+- **User & Privilege Management**: Provision SQL users and roles, grant/revoke privileges. Lets you run the agent under a scoped non-root user.
+- **Vector Search**: Similarity search with cosine/L2/inner-product metrics (auto-detected from index opclass), C-SPANN ANN index management (v25.2+).
+- **Job Management**: Observe and control async jobs (BACKUP, RESTORE, IMPORT, CHANGEFEED, SCHEMA CHANGE).
+- **Backup & Restore**: Full / database / table backup and restore against s3, gs, azure, nodelocal, userfile.
+- **Statistics**: Create and show optimizer statistics.
+- **Multi-Region**: Regions, survival goals, locality (REGIONAL_BY_ROW etc.), zone configuration.
+- **Changefeeds**: CDC pipelines to Kafka / webhook / cloud-storage with sink-scheme validation.
+- **Cluster Admin**: Cluster settings, decommission/drain (gated).
+- **Diagnostics**: Tracing spans, statement-diagnostics bundles.
+- **Safety First**: Strict identifier validation, parameterized values, `--read-only` mode, explicit `confirm=True` for destructive ops, redacted DSN responses.
+- **Seamless MCP Integration**: Works with any MCP client (Claude Desktop, Cursor, VS Code Copilot, OpenAI Agents SDK, etc.).
+- **Multiple Transports**: stdio (default) and streamable HTTP.
 
 ## Tools
 
@@ -51,7 +69,7 @@ The CockroachDB MCP Server Server provides tools to manage the data stored in Co
 
 ![architecture](https://github.com/user-attachments/assets/36a121d9-48b7-4840-9317-002a38441b8d)
 
-The tools are organized into four main categories:
+The tools are organized into thirteen categories. Every write-shaped tool is gated by `--read-only`. Every destructive tool also requires `--allow-destructive` plus a per-call `confirm=True` parameter; see the [Safety Model](#safety-model) section.
 
 ### Cluster Monitoring
 
@@ -83,14 +101,16 @@ Summary:
 ### Table Management
 
 Purpose:
-Provides tools for managing tables, indexes, views, and schema relationships in CockroachDB.
+Provides tools for managing tables, indexes, views, schemas, and relationships in CockroachDB.
 
 Summary:
-- Create, drop, and describe tables and views.
-- Bulk import data into tables.
+- Create, drop, describe, rename, and truncate tables (destructive ops gated).
+- `alter_table_add_column`, `alter_table_drop_column`, `alter_table_rename_column`.
+- Bulk import data into tables (CSV / Avro from s3/gs/azure/http(s)).
 - Manage indexes (create/drop).
-- List tables, views, and table relationships.
-- Analyze schema structure and metadata.
+- Manage views (create/drop, list).
+- Manage schemas (`list_schemas`, `create_schema`, `drop_schema`).
+- List tables and table relationships; analyze schema structure and metadata.
 
 ### Query Engine
 
@@ -102,6 +122,118 @@ Summary:
 - Run multi-statement transactions.
 - Explain query plans for optimization.
 - Track and retrieve query history.
+
+### User & Privilege Management
+
+Purpose:
+Manage SQL users, roles, and privileges. Use this from an administrative agent
+to provision the agent's own scoped (non-root) user.
+
+Summary:
+- `list_users`, `create_user`, `drop_user`, `alter_user_password`.
+- `create_role`, `drop_role`, `grant_role`, `revoke_role`.
+- `show_grants`, `grant_privileges`, `revoke_privileges`.
+
+Privileges are validated against an allowlist (`SELECT`, `INSERT`, `UPDATE`,
+`DELETE`, `ALL`, `BACKUP`, `RESTORE`, `MODIFYCLUSTERSETTING`, ...). Identifiers
+go through the same strict regex as everywhere else.
+
+### Vector Search
+
+Purpose:
+Search VECTOR columns with CockroachDB's similarity operators (v25.2+) and
+manage C-SPANN ANN indexes.
+
+Summary:
+- `vector_similarity_search` with `metric` of `cosine` (default), `l2`, `ip`,
+  or `auto` (matches the existing index opclass). Returns `distance` and a
+  derived `similarity` field.
+- `create_cspann_index` with metric → opclass mapping
+  (`vector_cosine_ops` / `vector_l2_ops` / `vector_ip_ops`).
+- `drop_cspann_index` (destructive).
+
+The query vector is always passed as a `$1::VECTOR` parameter; identifier and
+optional `where` clause values are validated. For normalized embeddings (e.g.
+Takara DS1, OpenAI text-embedding-3) all three metrics rank identically; the
+default `cosine` is the safest because it ignores magnitude.
+
+### Job Management
+
+Purpose:
+Observe and control long-running CockroachDB jobs (BACKUP, RESTORE, IMPORT,
+SCHEMA CHANGE, CHANGEFEED).
+
+Summary:
+- `list_jobs` (filter by status and type), `get_job_status`.
+- `pause_job`, `resume_job`, `cancel_job` (destructive).
+
+### Backup & Restore
+
+Purpose:
+Take and restore cluster, database, and table backups.
+
+Summary:
+- `create_backup` to s3/gs/azure/nodelocal/userfile destinations.
+- `list_backups` to enumerate backups at a storage URI.
+- `restore_backup` (destructive) with optional `new_db_name`.
+- `list_scheduled_backups`.
+
+URI schemes are validated against an allowlist; identifier targets are
+identifier-validated.
+
+### Statistics
+
+Purpose:
+Compute and inspect the table statistics the cost-based optimizer relies on.
+
+Summary:
+- `create_statistics` (CREATE STATISTICS).
+- `show_statistics` (SHOW STATISTICS FOR TABLE).
+
+### Multi-Region
+
+Purpose:
+Configure multi-region behaviour: regions, survival goals, table localities,
+zone configurations.
+
+Summary:
+- `show_regions`, `show_database_regions`.
+- `add_database_region`, `drop_database_region` (destructive).
+- `set_survival_goal` (`ZONE` or `REGION`).
+- `set_table_locality` (`REGIONAL`, `REGIONAL_BY_ROW`, `REGIONAL_BY_TABLE`, `GLOBAL`).
+- `show_zone_config` for DATABASE/TABLE/INDEX.
+
+### Changefeeds
+
+Purpose:
+Set up and operate CDC pipelines to Kafka, webhooks, or cloud storage.
+
+Summary:
+- `create_changefeed` with sink-scheme validation (kafka, webhook-http(s), s3,
+  gs, azure-blob, external, null), JSON or Avro format, choice of envelope.
+- `list_changefeeds`, `pause_changefeed`, `resume_changefeed`.
+- `cancel_changefeed` (destructive).
+
+### Cluster Admin
+
+Purpose:
+Cluster-wide administration: cluster settings and node lifecycle.
+
+Summary:
+- `show_cluster_setting`, `set_cluster_setting`, `reset_cluster_setting`
+  (destructive). Setting names are validated against a strict regex.
+- `decommission_node`, `drain_node`. Note that SQL-initiated decommission
+  only marks intent; for the full lifecycle use the `cockroach node` CLI.
+
+### Diagnostics
+
+Purpose:
+Inspect tracing spans and request statement-diagnostics bundles.
+
+Summary:
+- `get_recent_traces` from `crdb_internal.cluster_inflight_traces`.
+- `list_statement_diagnostics_requests`.
+- `request_statement_diagnostics` for a statement fingerprint.
 
 ## Installation
 

@@ -7,10 +7,19 @@ import sys
 import click
 
 # Import tool modules to register them with the FastMCP instance.
+import src.tools.backup_restore  # noqa: F401
+import src.tools.changefeeds  # noqa: F401
+import src.tools.cluster_admin  # noqa: F401
 import src.tools.cluster_monitoring  # noqa: F401
 import src.tools.database_operations  # noqa: F401
+import src.tools.diagnostics  # noqa: F401
+import src.tools.job_management  # noqa: F401
+import src.tools.multi_region  # noqa: F401
 import src.tools.query_engine  # noqa: F401
+import src.tools.statistics  # noqa: F401
 import src.tools.table_management  # noqa: F401
+import src.tools.user_management  # noqa: F401
+import src.tools.vector_search  # noqa: F401
 from src.common.config import (
     ServerFlags,
     parse_crdb_uri,

@@ -15,6 +15,7 @@ from src.common.server import mcp
 from src.common.sql_safety import (
     UnsafeIdentifierError,
     quote_identifier,
+    quote_qualified_identifier,
     validate_identifier,
     validate_import_scheme,
 )
@@ -597,3 +598,241 @@ async def analyze_schema(ctx: Context, db_schema: str = "public") -> dict[str, A
         relationships=relationships["relationships"],
         generated_at=datetime.now().isoformat(),
     )
+
+
+# ----- Schema management -----
+
+
+@mcp.tool()
+async def list_schemas(ctx: Context) -> dict[str, Any]:
+    """List all schemas in the current database."""
+    try:
+        pool = await CockroachConnectionPool.get_connection_pool()
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT schema_name, schema_owner
+                FROM information_schema.schemata
+                ORDER BY schema_name
+                """
+            )
+        return ok(schemas=[dict(r) for r in rows], count=len(rows))
+    except Exception as exc:
+        log.exception("list_schemas failed")
+        return err(exc)
+
+
+@mcp.tool()
+async def create_schema(ctx: Context, schema_name: str) -> dict[str, Any]:
+    """Create a new schema in the current database.
+
+    Args:
+        schema_name: Schema name.
+    """
+    if block := _require_writes_allowed():
+        return block
+    try:
+        ident = quote_identifier(schema_name, kind="schema")
+    except UnsafeIdentifierError as exc:
+        return err(exc)
+    try:
+        pool = await CockroachConnectionPool.get_connection_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(f"CREATE SCHEMA IF NOT EXISTS {ident}")
+        return ok(message=f"Schema {schema_name!r} created.")
+    except Exception as exc:
+        log.exception("create_schema failed")
+        return err(exc)
+
+
+@mcp.tool()
+async def drop_schema(
+    ctx: Context, schema_name: str, cascade: bool = False, confirm: bool = False
+) -> dict[str, Any]:
+    """Drop a schema.
+
+    Args:
+        schema_name: Schema name.
+        cascade: If True, drop all objects in the schema.
+        confirm: Must be True.
+    """
+    if block := _require_destructive_allowed("drop_schema"):
+        return block
+    if not confirm:
+        return err(f"Refusing to drop schema {schema_name!r}: pass confirm=True")
+    try:
+        ident = quote_identifier(schema_name, kind="schema")
+    except UnsafeIdentifierError as exc:
+        return err(exc)
+    sql = f"DROP SCHEMA IF EXISTS {ident}"
+    if cascade:
+        sql += " CASCADE"
+    try:
+        pool = await CockroachConnectionPool.get_connection_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(sql)
+        return ok(message=f"Schema {schema_name!r} dropped.")
+    except Exception as exc:
+        log.exception("drop_schema failed")
+        return err(exc)
+
+
+# ----- Alter and truncate -----
+
+
+@mcp.tool()
+async def truncate_table(
+    ctx: Context, table_name: str, cascade: bool = False, confirm: bool = False
+) -> dict[str, Any]:
+    """Remove all rows from a table.
+
+    Args:
+        table_name: Table name.
+        cascade: If True, also truncate tables that have foreign keys to this one.
+        confirm: Must be True.
+    """
+    if block := _require_destructive_allowed("truncate_table"):
+        return block
+    if not confirm:
+        return err(f"Refusing to truncate {table_name!r}: pass confirm=True")
+    try:
+        ident = (
+            quote_qualified_identifier(table_name, kind="table")
+            if "." in table_name
+            else quote_identifier(table_name, kind="table")
+        )
+    except UnsafeIdentifierError as exc:
+        return err(exc)
+    sql = f"TRUNCATE {ident}"
+    if cascade:
+        sql += " CASCADE"
+    try:
+        pool = await CockroachConnectionPool.get_connection_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(sql)
+        return ok(message=f"Table {table_name!r} truncated.")
+    except Exception as exc:
+        log.exception("truncate_table failed")
+        return err(exc)
+
+
+@mcp.tool()
+async def rename_table(ctx: Context, table_name: str, new_name: str) -> dict[str, Any]:
+    """Rename a table.
+
+    Args:
+        table_name: Current name.
+        new_name: New name.
+    """
+    if block := _require_writes_allowed():
+        return block
+    try:
+        from_ident = quote_identifier(table_name, kind="table")
+        to_ident = quote_identifier(new_name, kind="table")
+    except UnsafeIdentifierError as exc:
+        return err(exc)
+    try:
+        pool = await CockroachConnectionPool.get_connection_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(f"ALTER TABLE {from_ident} RENAME TO {to_ident}")
+        return ok(message=f"Renamed table {table_name!r} to {new_name!r}.")
+    except Exception as exc:
+        log.exception("rename_table failed")
+        return err(exc)
+
+
+@mcp.tool()
+async def alter_table_add_column(
+    ctx: Context,
+    table_name: str,
+    column_name: str,
+    datatype: str,
+    constraint: str = "",
+) -> dict[str, Any]:
+    """Add a column to an existing table.
+
+    Args:
+        table_name: Target table.
+        column_name: New column name.
+        datatype: CockroachDB datatype.
+        constraint: Optional constraint clause (NOT NULL, DEFAULT ..., etc.).
+    """
+    if block := _require_writes_allowed():
+        return block
+    try:
+        t_ident = quote_identifier(table_name, kind="table")
+        c_ident = quote_identifier(column_name, kind="column")
+        dt = _validate_datatype(datatype)
+        constr = _validate_constraint(constraint) if constraint else ""
+    except UnsafeIdentifierError as exc:
+        return err(exc)
+    sql = f"ALTER TABLE {t_ident} ADD COLUMN {c_ident} {dt}"
+    if constr:
+        sql += f" {constr}"
+    try:
+        pool = await CockroachConnectionPool.get_connection_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(sql)
+        return ok(message=f"Added column {column_name!r} to {table_name!r}.")
+    except Exception as exc:
+        log.exception("alter_table_add_column failed")
+        return err(exc)
+
+
+@mcp.tool()
+async def alter_table_drop_column(
+    ctx: Context, table_name: str, column_name: str, confirm: bool = False
+) -> dict[str, Any]:
+    """Drop a column from a table.
+
+    Args:
+        table_name: Target table.
+        column_name: Column to remove.
+        confirm: Must be True.
+    """
+    if block := _require_destructive_allowed("alter_table_drop_column"):
+        return block
+    if not confirm:
+        return err(f"Refusing to drop column {column_name!r}: pass confirm=True")
+    try:
+        t_ident = quote_identifier(table_name, kind="table")
+        c_ident = quote_identifier(column_name, kind="column")
+    except UnsafeIdentifierError as exc:
+        return err(exc)
+    try:
+        pool = await CockroachConnectionPool.get_connection_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(f"ALTER TABLE {t_ident} DROP COLUMN {c_ident}")
+        return ok(message=f"Dropped column {column_name!r} from {table_name!r}.")
+    except Exception as exc:
+        log.exception("alter_table_drop_column failed")
+        return err(exc)
+
+
+@mcp.tool()
+async def alter_table_rename_column(
+    ctx: Context, table_name: str, old_name: str, new_name: str
+) -> dict[str, Any]:
+    """Rename a column.
+
+    Args:
+        table_name: Target table.
+        old_name: Current column name.
+        new_name: New column name.
+    """
+    if block := _require_writes_allowed():
+        return block
+    try:
+        t_ident = quote_identifier(table_name, kind="table")
+        from_ident = quote_identifier(old_name, kind="column")
+        to_ident = quote_identifier(new_name, kind="column")
+    except UnsafeIdentifierError as exc:
+        return err(exc)
+    try:
+        pool = await CockroachConnectionPool.get_connection_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(f"ALTER TABLE {t_ident} RENAME COLUMN {from_ident} TO {to_ident}")
+        return ok(message=f"Renamed {table_name!r}.{old_name!r} to {new_name!r}.")
+    except Exception as exc:
+        log.exception("alter_table_rename_column failed")
+        return err(exc)
