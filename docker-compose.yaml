@@ -26,7 +26,10 @@ services:
       - CRDB_DATABASE=defaultdb
       - CRDB_USERNAME=root
       - CRDB_SSL_MODE=disable
-    command: ["--use-env", "--transport", "http", "--http-host", "0.0.0.0", "--http-port", "8000"]
+      # Local-dev defaults: read-only off, destructive ops off.
+      # Override to enable in this compose file only when you mean it.
+      - MCP_LOG_LEVEL=INFO
+    command: ["--use-env", "--transport", "http", "--http-host", "0.0.0.0", "--http-port", "8000", "--read-only"]
     depends_on:
       cockroachdb:
         condition: service_healthy

@@ -1,297 +1,286 @@
+"""Database-level MCP tools: connect, list/create/drop/switch databases, sessions."""
+
+from __future__ import annotations
+
+from typing import Any
+
 from mcp.server.fastmcp import Context
-from typing import Dict, Any
+
+from src.common.config import get_flags
+from src.common.connection import (
+    CockroachConnectionPool,
+    replace_database_in_url,
+)
+from src.common.logging_config import get_logger
 from src.common.server import mcp
-from src.common.connection import CockroachConnectionPool
+from src.common.sql_safety import (
+    UnsafeIdentifierError,
+    quote_identifier,
+    redact_dsn,
+    validate_ssl_mode,
+)
+from src.common.tool_result import err, ok
+
+log = get_logger("database_operations")
+
 
 @mcp.tool()
-async def connect(ctx: Context) -> Dict[str, Any]:
+async def connect(ctx: Context) -> dict[str, Any]:
     """Connect to the default CockroachDB database and create a connection pool.
 
-    Returns:
-        A success message or an error message.
+    Returns a success object with the redacted DSN, server version, and current
+    database, or an error.
     """
     try:
         pool = await CockroachConnectionPool.get_connection_pool()
-        # Test connection
         async with pool.acquire() as conn:
             version = await conn.fetchval("SELECT version()")
             database = await conn.fetchval("SELECT current_database()")
+        return ok(
+            message=f"Connected to CockroachDB at {redact_dsn(CockroachConnectionPool.database_url)}",
+            server_version=version,
+            current_database=database,
+        )
+    except Exception as exc:
+        log.exception("connect failed")
+        return err(exc)
 
-        return {
-            "success": True,
-            "message": f"Connected to CockroachDB with DSN: {CockroachConnectionPool.database_url}",
-            "server_version": version,
-            "current_database": database
-        }
-
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
 
 @mcp.tool()
-async def connect_database(ctx: Context, host: str, database: str, port: int, username: str, password: str, 
-                                sslmode: str, sslcert: str, sslkey: str, sslrootcert: str) -> Dict[str, Any]:
-    """Connect to a CockroachDB database and create a connection pool.
+async def connect_database(
+    ctx: Context,
+    host: str,
+    database: str,
+    port: int,
+    username: str,
+    password: str,
+    sslmode: str,
+    sslcert: str,
+    sslkey: str,
+    sslrootcert: str,
+) -> dict[str, Any]:
+    """Connect to a different CockroachDB database and create a connection pool.
 
     Args:
-        host (str): CockroachDB host.
-        port (int): CockroachDB port (default: 26257).
-        database (str): Database name (default: "defaultdb").
-        username (str): Username (default: "root").
-        password (str): Password.
-        sslmode (str): SSL mode (default: disable - Possible values: allow, prefer, require, verify-ca, verify-full).
-        sslcert (str): Path to user certificate file.
-        sslkey (str): Path to user key file.
-        sslrootcert (str): Path to CA certificate file.
-
-    Returns:
-        A success message or an error message.
+        host: CockroachDB host.
+        port: CockroachDB port (default: 26257).
+        database: Database name (default: "defaultdb").
+        username: Username (default: "root").
+        password: Password.
+        sslmode: SSL mode. One of: disable, allow, prefer, require, verify-ca, verify-full.
+        sslcert: Path to client certificate file.
+        sslkey: Path to client key file.
+        sslrootcert: Path to CA certificate file.
     """
     try:
-        pool = await CockroachConnectionPool.refresh_connection_pool(
+        sslmode = validate_ssl_mode(sslmode or "disable")
+        await CockroachConnectionPool.refresh_connection_pool(
             host=host,
             port=port or 26257,
-            database=database or 'defaultdb',
-            username=username or 'root',
+            database=database or "defaultdb",
+            username=username or "root",
             password=password,
-            sslmode=sslmode or 'disable',
+            sslmode=sslmode,
             sslcert=sslcert,
             sslkey=sslkey,
-            sslrootcert=sslrootcert
+            sslrootcert=sslrootcert,
         )
-        # Test connection
+        pool = await CockroachConnectionPool.get_connection_pool()
         async with pool.acquire() as conn:
             version = await conn.fetchval("SELECT version()")
-            database = await conn.fetchval("SELECT current_database()")
+            current_db = await conn.fetchval("SELECT current_database()")
+        return ok(
+            message=f"Connected to CockroachDB at {redact_dsn(CockroachConnectionPool.database_url)}",
+            server_version=version,
+            current_database=current_db,
+        )
+    except Exception as exc:
+        log.exception("connect_database failed")
+        return err(exc)
 
-        return {
-            "success": True,
-            "message": f"Connected to CockroachDB with DSN: {CockroachConnectionPool.database_url}",
-            "server_version": version,
-            "current_database": database
-        }
-
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
-    
-@mcp.tool()
-async def list_databases(ctx: Context) -> Dict[str, Any]:
-    """List all databases in the CockroachDB cluster.
-
-    Returns:
-        A list of databases with row count or an error message.
-    """
-
-    pool = await CockroachConnectionPool.get_connection_pool()
-    if not pool:
-        raise Exception("Not connected to database")
-
-    query = """
-    SELECT 
-        database_name,
-        owner,
-        primary_region,
-        regions,
-        survival_goal
-    FROM [SHOW DATABASES]
-    ORDER BY database_name
-    """
-
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(query)
-
-    return {
-        "databases": [dict(row) for row in rows],
-        "count": len(rows)
-    }
 
 @mcp.tool()
-async def get_connection_status(ctx: Context) -> Dict[str, Any]:
-    """Get the current connection status and details.
-
-    Returns:
-        The connection status or an error message.
-    """
-
-    pool = await CockroachConnectionPool.get_connection_pool()
-    if not pool:
-        return {"connected": False}
-
+async def list_databases(ctx: Context) -> dict[str, Any]:
+    """List all databases visible to the connected user."""
     try:
+        pool = await CockroachConnectionPool.get_connection_pool()
         async with pool.acquire() as conn:
-            result = await conn.fetchrow("""
-            SELECT 
-                current_database() as database,
-                current_user() as user,
-                pg_backend_pid() as backend_pid
-            """)
+            rows = await conn.fetch(
+                """
+                SELECT
+                    database_name,
+                    owner,
+                    primary_region,
+                    regions,
+                    survival_goal
+                FROM [SHOW DATABASES]
+                ORDER BY database_name
+                """
+            )
+        return ok(databases=[dict(r) for r in rows], count=len(rows))
+    except Exception as exc:
+        log.exception("list_databases failed")
+        return err(exc)
 
-        return {
-            "connected": True,
-            "details": dict(result),
-            "pool_stats": {
+
+@mcp.tool()
+async def get_connection_status(ctx: Context) -> dict[str, Any]:
+    """Get the current connection status, pool stats, and active user/db."""
+    try:
+        pool = await CockroachConnectionPool.get_connection_pool()
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT
+                    current_database() as database,
+                    current_user() as "user",
+                    pg_backend_pid() as backend_pid
+                """
+            )
+        return ok(
+            connected=True,
+            details=dict(row),
+            pool_stats={
                 "size": pool.get_size(),
                 "min_size": pool.get_min_size(),
-                "max_size": pool.get_max_size()
-            }
-        }
+                "max_size": pool.get_max_size(),
+            },
+        )
+    except Exception as exc:
+        log.exception("get_connection_status failed")
+        return err(exc, connected=False)
 
-    except Exception as e:
-        return {
-            "connected": False,
-            "error": str(e)
-        }
 
 @mcp.tool()
-async def switch_database(ctx: Context, database: str) -> Dict[str, Any]:
-    """Switch the connection to a different database.
+async def switch_database(ctx: Context, database: str) -> dict[str, Any]:
+    """Switch the connection pool to a different database.
 
     Args:
-        database (str): Name of the database to switch to.
-
-    Returns:
-        A success message or an error message.
+        database: Name of the database to switch to. Must be a valid SQL identifier.
     """
-    pool = await CockroachConnectionPool.get_connection_pool()
-    if not pool:
-        raise Exception("Not connected to database")
+    try:
+        # Validate the identifier even though we're using it as the path of a
+        # DSN (not interpolated into SQL). This guards against arbitrary text
+        # like 'foo?param=x' that would corrupt the new DSN.
+        quote_identifier(database, kind="database")
+    except UnsafeIdentifierError as exc:
+        return err(exc)
 
     try:
-        # Close current pool
-        pool.terminate()
-
-        # Create new pool with different database
-        # Extract connection info from current pool
-        dsn_parts = CockroachConnectionPool.database_url.split('/')
         old_database = CockroachConnectionPool.current_database
-        base_dsn = '/'.join(dsn_parts[:-1])
-        old_path = dsn_parts[-1]
-        if "?" in old_path:
-            query = old_path[old_path.index("?"):] 
-        else: 
-            query = ""
-        
-        new_dsn = f"{base_dsn}/{database}{query}"
+        new_dsn = replace_database_in_url(CockroachConnectionPool.database_url, database)
+        await CockroachConnectionPool.create_connection_pool(new_dsn)
+        return ok(
+            message=f"Switched from {old_database!r} to {CockroachConnectionPool.current_database!r}",
+            current_database=CockroachConnectionPool.current_database,
+        )
+    except Exception as exc:
+        log.exception("switch_database failed")
+        return err(exc)
 
-        pool = await CockroachConnectionPool.create_connection_pool(new_dsn)
-        new_database = CockroachConnectionPool.current_database
-
-        return {
-            "success": True,
-            "message": f"Switched from {old_database} to {new_database}",
-            "current_database": database
-        }
-
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
 
 @mcp.tool()
-async def get_active_connections(ctx: Context) -> Dict[str, Any]:
-    """List active connections/sessions to the current database.
-
-    Returns:
-        Active sessions on the cluster.
-    """
-    pool = await CockroachConnectionPool.get_connection_pool()
-    if not pool:
-        raise Exception("Not connected to database")
+async def get_active_connections(ctx: Context) -> dict[str, Any]:
+    """List active sessions on the cluster."""
     try:
-        query = """
-        SELECT
-            session_id,
-            user_name,
-            client_address,
-            application_name,
-            active_query_start,
-            last_active_query,
-            session_start,
-            status
-        FROM [SHOW SESSIONS]
-        ORDER BY session_start DESC
-        """
+        pool = await CockroachConnectionPool.get_connection_pool()
         async with pool.acquire() as conn:
-            rows = await conn.fetch(query)
-        return {
-            "connections": [dict(row) for row in rows],
-            "count": len(rows)
-        }
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+            rows = await conn.fetch(
+                """
+                SELECT
+                    session_id,
+                    user_name,
+                    client_address,
+                    application_name,
+                    active_query_start,
+                    last_active_query,
+                    session_start,
+                    status
+                FROM [SHOW SESSIONS]
+                ORDER BY session_start DESC
+                """
+            )
+        return ok(connections=[dict(r) for r in rows], count=len(rows))
+    except Exception as exc:
+        log.exception("get_active_connections failed")
+        return err(exc)
+
 
 @mcp.tool()
-async def get_database_settings(ctx: Context) -> Dict[str, Any]:
-    """Retrieve current database or cluster settings.
-
-    Returns:
-        All cluster settings.
-    """
-    pool = await CockroachConnectionPool.get_connection_pool()
-    if not pool:
-        raise Exception("Not connected to database")
+async def get_database_settings(ctx: Context) -> dict[str, Any]:
+    """Retrieve cluster settings (SHOW ALL CLUSTER SETTINGS)."""
     try:
-        query = "SHOW ALL CLUSTER SETTINGS"
+        pool = await CockroachConnectionPool.get_connection_pool()
         async with pool.acquire() as conn:
-            rows = await conn.fetch(query)
-        return {
-            "settings": [dict(row) for row in rows],
-            "count": len(rows)
-        }
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-    
-@mcp.tool()    
-async def create_database(ctx: Context, database_name: str) -> Dict[str, Any]:
-    """Enable the creation of new databases. 
-    
+            rows = await conn.fetch("SHOW ALL CLUSTER SETTINGS")
+        return ok(settings=[dict(r) for r in rows], count=len(rows))
+    except Exception as exc:
+        log.exception("get_database_settings failed")
+        return err(exc)
+
+
+@mcp.tool()
+async def create_database(ctx: Context, database_name: str) -> dict[str, Any]:
+    """Create a new database.
+
     Args:
-        database_name (str): Name of the database to create.
-    
-    Returns:
-        A success message or an error message.
+        database_name: Name of the database. Must be a valid SQL identifier.
+
+    Refused when the server runs in --read-only mode.
     """
-    pool = await CockroachConnectionPool.get_connection_pool()
-    if not pool:
-        raise Exception("Not connected to database")
+    flags = get_flags()
+    if flags.read_only:
+        return err("Server is in read-only mode; create_database is disabled")
     try:
+        ident = quote_identifier(database_name, kind="database")
+    except UnsafeIdentifierError as exc:
+        return err(exc)
+    try:
+        pool = await CockroachConnectionPool.get_connection_pool()
         async with pool.acquire() as conn:
-            await conn.execute(f'CREATE DATABASE IF NOT EXISTS "{database_name}"')
-        return {"success": True, "message": f"Database '{database_name}' created."}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+            await conn.execute(f"CREATE DATABASE IF NOT EXISTS {ident}")
+        return ok(message=f"Database {database_name!r} created.")
+    except Exception as exc:
+        log.exception("create_database failed")
+        return err(exc)
+
 
 @mcp.tool()
-async def drop_database(ctx: Context, database_name: str) -> Dict[str, Any]:
-    """Drop an existing database.
-    
+async def drop_database(ctx: Context, database_name: str, confirm: bool = False) -> dict[str, Any]:
+    """Drop a database.
+
     Args:
-        database_name (str): Name of the database to drop.
-    
-    Returns:
-        A success message or an error message.
+        database_name: Name of the database. Must be a valid SQL identifier.
+        confirm: Must be set to True. Tools refuse to execute destructive
+            operations without explicit confirmation, even when the server
+            runs in --allow-destructive mode.
+
+    Refused when the server runs in --read-only mode or without
+    --allow-destructive.
     """
-
-    if(database_name == 'defaultdb'):
-        return {"success": False, "error": "Cannot drop the default database."}
-    
-    if(database_name.lower() == CockroachConnectionPool.current_database.lower()):
-        await switch_database(ctx, 'defaultdb')
-
-    pool = await CockroachConnectionPool.get_connection_pool()
-    if not pool:
-        raise Exception("Not connected to database")
-    
+    flags = get_flags()
+    if flags.read_only:
+        return err("Server is in read-only mode; drop_database is disabled")
+    if not flags.allow_destructive:
+        return err("Destructive operations require --allow-destructive at server startup")
+    if not confirm:
+        return err(f"Refusing to drop database {database_name!r}: pass confirm=True to proceed")
+    if database_name.lower() == "defaultdb":
+        return err("Cannot drop the default database.")
     try:
+        ident = quote_identifier(database_name, kind="database")
+    except UnsafeIdentifierError as exc:
+        return err(exc)
+    # If we're dropping the currently active database, switch away first.
+    if database_name.lower() == CockroachConnectionPool.current_database.lower():
+        switch_result = await switch_database(ctx, "defaultdb")
+        if not switch_result.get("success", False):
+            return switch_result
+    try:
+        pool = await CockroachConnectionPool.get_connection_pool()
         async with pool.acquire() as conn:
-            await conn.execute(f'DROP DATABASE IF EXISTS "{database_name.lower()}" CASCADE')
-        return {"success": True, "message": f"Database '{database_name.lower()}' dropped."}
-    
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+            await conn.execute(f"DROP DATABASE IF EXISTS {ident} CASCADE")
+        return ok(message=f"Database {database_name!r} dropped.")
+    except Exception as exc:
+        log.exception("drop_database failed")
+        return err(exc)
