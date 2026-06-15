@@ -1,6 +1,6 @@
 # CockroachDB MCP Server
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python Version](https://img.shields.io/badge/python-3.13%2B-blue)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/downloads/)
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-blue)](https://mcp.so/server/cockroachdb-mcp-server/cockroachdb)
 [![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/amineelkouhen/mcp-cockroachdb)](https://archestra.ai/mcp-catalog/amineelkouhen__mcp-cockroachdb)
 
@@ -36,13 +36,14 @@ The CockroachDB MCP Server is a **natural language interface** designed for LLMs
 - [Contact](#contact)
 
 ## Features
-- **Natural Language Queries**: Enables AI agents to query and create transactions using natural language, supporting complex workflows.
-- **Search & Filtering**: Supports efficient data retrieval and searching in CockroachDB.
-- **Cluster Monitoring**: Check and monitor the CockroachDB cluster status, including node health and replication.
-- **Database Operations**: Perform all operations related to databases, such as creation, deletion, and configuration.
-- **Table Management**: Handle tables, indexes, and schemas for flexible data modeling.
-- **Seamless MCP Integration**: Works with any **MCP client** for smooth communication.
-- **Scalable & Lightweight**: Designed for **high-performance** data operations.
+- **Natural Language Queries**: Enables AI agents to query and run transactions using natural language, supporting complex workflows.
+- **Cluster Monitoring**: Check cluster status, node health, replication, slow queries, contention, and index recommendations.
+- **Database Operations**: List, create, drop, and switch databases.
+- **Table Management**: Create and drop tables, indexes, and views; bulk-import data; analyze schema.
+- **Query Engine**: Execute SQL with formatting options, run multi-statement transactions, explain query plans, track query history.
+- **Safety First**: SQL identifier validation, parameterized values, optional `--read-only` mode, explicit `confirm=True` requirement for destructive operations, redacted DSN responses.
+- **Seamless MCP Integration**: Works with any **MCP client** (Claude Desktop, Cursor, VS Code Copilot, OpenAI Agents SDK, etc.).
+- **Multiple Transports**: stdio (default) and streamable HTTP for horizontal scaling.
 
 ## Tools
 
@@ -284,18 +285,47 @@ uvx --from git+https://github.com/amineelkouhen/mcp-cockroachdb.git cockroachdb-
 - `--host` - CockroachDB hostname 
 - `--port` - CockroachDB port (default: 26257)
 - `--db` - CockroachDB database name (default: defaultdb)
-- `--user` - CockroachDB username
+- `--username` - CockroachDB username (default: root)
 - `--password` - CockroachDB password
-- `--ssl-mode` - SSL mode - Possible values: require, verify-ca, verify-full, disable (default)
-- `--ssl-key` - Path to SSL Client key file
-- `--ssl-cert` - Path to SSL Client certificate file
-- `--ssl-ca-cert` - Path to CA (Root) certificate file'
+- `--ssl-mode` - SSL mode - Possible values: disable (default), allow, prefer, require, verify-ca, verify-full
+- `--ssl-key` - Path to SSL client key file
+- `--ssl-cert` - Path to SSL client certificate file
+- `--ssl-ca-cert` - Path to CA (root) certificate file
 - `--transport` - MCP transport to use (`stdio` or `http`)
 - `--http-host` - HTTP host to bind for streamable HTTP transport
 - `--http-port` - HTTP port to bind for streamable HTTP transport
-- `--http-path` - HTTP path for streamable HTTP transport (e.g., /mcp)
+- `--http-path` - HTTP path for streamable HTTP transport (e.g., `/mcp`)
 - `--stateless-http` - Enable stateless HTTP mode for horizontal scaling
 - `--use-env` - Use environment variables for CockroachDB configuration
+- `--read-only` - Refuse all DDL and write tools; recommended for assistant-style deployments
+- `--allow-destructive` - Required for `drop_database`, `drop_table`, `drop_index`, `drop_view`. Even with this flag, every destructive call must include `confirm=True`.
+- `--version` - Show the server version and exit
+
+### Safety Model
+
+This server is designed for use with an LLM-driven agent, where a prompt-injection attack on the agent could turn into SQL injection or data destruction. Three layers of defense are built in:
+
+1. **Identifier validation.** All database, schema, table, column, index, and view names are validated against `^[A-Za-z_][A-Za-z0-9_]{0,62}$` before being interpolated into SQL.
+2. **Values are always parameterized.** Filters, limits, and intervals use asyncpg placeholders (`$1`, `$2`, ...). No user-controlled value is interpolated into SQL.
+3. **Server-level policy.**
+   - `--read-only` disables every DDL and write-shaped tool (`drop_*`, `create_*`, `execute_query` of INSERT/UPDATE/etc., `bulk_import`, ...).
+   - `--allow-destructive` is required for `drop_*` tools. Even then, the caller must pass `confirm=True` per call.
+   - DSNs are redacted in responses; passwords never appear in `connect()` results.
+
+Recommended defaults for production assistant-style use: `--read-only`. For administrative agents that need to manage schema, set `--allow-destructive` but never disable the `confirm=True` requirement.
+
+### Logging
+
+Logging is configured via environment variables:
+
+- `MCP_LOG_LEVEL` (default `INFO`) — standard Python logging level (DEBUG/INFO/WARNING/ERROR).
+- `MCP_LOG_JSON=1` — emit JSON-structured log lines, recommended when running with `--transport http`.
+
+### Connection pool tuning
+
+- `CRDB_POOL_MIN` (default `1`)
+- `CRDB_POOL_MAX` (default `10`)
+- `CRDB_COMMAND_TIMEOUT` (default `60` seconds)
 
 ### Configuration via Environment Variables
 
@@ -375,10 +405,11 @@ You can configure the CockroachDB MCP Server in Augment by importing the server 
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/cockroachdb/mcp-cockroachdb.git",
+        "git+https://github.com/amineelkouhen/mcp-cockroachdb.git",
         "cockroachdb-mcp-server",
         "--url",
-        "postgresql://root@localhost:26257/defaultdb"
+        "postgresql://root@localhost:26257/defaultdb",
+        "--read-only"
       ]
     }
   }
@@ -472,7 +503,27 @@ Read the configuration options [here](#configuration-via-environment-variables) 
 
 ## Testing
 
-You can use the [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) for visual debugging of this MCP Server.
+### Unit tests
+
+The repository ships with a pytest suite covering the SQL identifier validators, type serializers, DSN parsing, URL helpers, output formatting, and policy gating (read-only mode, destructive-op gating, injection rejection).
+
+```sh
+uv sync --extra dev
+uv run pytest -v
+```
+
+CI runs the same suite on Python 3.12 and 3.13. See `.github/workflows/test.yml`.
+
+### Linting
+
+```sh
+uv run ruff check src tests
+uv run ruff format --check src tests
+```
+
+### MCP Inspector
+
+For interactive debugging of the live server, use the [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector):
 
 ```sh
 npx @modelcontextprotocol/inspector uv run src/main.py
