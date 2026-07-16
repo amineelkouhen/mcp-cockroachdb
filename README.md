@@ -67,11 +67,79 @@ The CockroachDB MCP Server is a **natural language interface** designed for LLMs
 
 ## Tools
 
-The CockroachDB MCP Server Server provides tools to manage the data stored in CockroachDB. 
+The CockroachDB MCP Server exposes CockroachDB as a set of MCP tools. Requests flow from any MCP client through a transport, into the safety layer, then to one of the thirteen tool categories, and finally to CockroachDB via an asyncpg connection pool.
 
-![architecture](https://github.com/user-attachments/assets/36a121d9-48b7-4840-9317-002a38441b8d)
+```mermaid
+flowchart LR
+    subgraph Clients["MCP Clients"]
+        direction TB
+        C1["Claude Desktop"]
+        C2["Cursor"]
+        C3["VS Code Copilot"]
+        C4["OpenAI Agents SDK"]
+        C5["Augment"]
+    end
 
-The tools are organized into thirteen categories. Every write-shaped tool is gated by `--read-only`. Every destructive tool also requires `--allow-destructive` plus a per-call `confirm=True` parameter; see the [Safety Model](#safety-model) section.
+    subgraph Transport["Transport"]
+        direction TB
+        T1["stdio"]
+        T2["streamable HTTP"]
+    end
+
+    subgraph Server["CockroachDB MCP Server (FastMCP)"]
+        direction TB
+
+        subgraph Safety["Safety Layer"]
+            direction TB
+            S1["Identifier validation<br/>(strict regex)"]
+            S2["Parameterized values<br/>($1, $2, ...)"]
+            S3["--read-only gate"]
+            S4["--allow-destructive<br/>+ confirm=True"]
+            S5["DSN redaction"]
+        end
+
+        subgraph Tools["Tool Categories (13)"]
+            direction TB
+
+            subgraph Obs["Observe & Diagnose"]
+                O1["Cluster Monitoring"]
+                O2["Diagnostics"]
+                O3["Statistics"]
+            end
+
+            subgraph Data["Data & Schema"]
+                D1["Database Operations"]
+                D2["Table Management"]
+                D3["Query Engine"]
+                D4["Vector Search (C-SPANN)"]
+            end
+
+            subgraph Ops["Data Movement"]
+                P1["Job Management"]
+                P2["Backup & Restore"]
+                P3["Changefeeds (CDC)"]
+            end
+
+            subgraph Adm["Admin & Topology"]
+                A1["User & Privilege Management"]
+                A2["Multi-Region"]
+                A3["Cluster Admin"]
+            end
+        end
+
+        Pool["asyncpg connection pool"]
+    end
+
+    DB[("CockroachDB<br/>single- or multi-region cluster")]
+
+    Clients --> Transport
+    Transport --> Safety
+    Safety --> Tools
+    Tools --> Pool
+    Pool --> DB
+```
+
+The tools are organized into thirteen categories, grouped above by concern. Every write-shaped tool is gated by `--read-only`. Every destructive tool also requires `--allow-destructive` plus a per-call `confirm=True` parameter; see the [Safety Model](#safety-model) section.
 
 ### Cluster Monitoring
 
