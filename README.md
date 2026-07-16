@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/amineelkouhen-mcp-cockroachdb-badge.png)](https://mseep.ai/app/amineelkouhen-mcp-cockroachdb)
+
 # CockroachDB MCP Server
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/downloads/)
