@@ -65,9 +65,11 @@ class CockroachMCPServer:
 @click.version_option(__version__, prog_name="cockroachdb-mcp-server")
 @click.option(
     "--url",
+    envvar="CRDB_URL",
     help=(
         "CockroachDB connection URI "
-        "(postgresql://<user>:<password>@<host>:<port>/<db> or cockroach://...)"
+        "(postgresql://<user>:<password>@<host>:<port>/<db> or cockroach://...). "
+        "Also read from CRDB_URL."
     ),
 )
 @click.option("--host", help="CockroachDB host")
@@ -116,18 +118,21 @@ class CockroachMCPServer:
     "--read-only/--no-read-only",
     default=False,
     show_default=True,
+    envvar="MCP_READ_ONLY",
     help=(
         "Refuse all DDL and write tools (drop_*, create_*, execute_query of "
-        "write statements, etc.)."
+        "write statements, etc.). Also read from MCP_READ_ONLY."
     ),
 )
 @click.option(
     "--allow-destructive/--no-allow-destructive",
     default=False,
     show_default=True,
+    envvar="MCP_ALLOW_DESTRUCTIVE",
     help=(
         "Required for drop_database, drop_table, drop_index, drop_view. "
-        "Even with this flag, callers must pass confirm=True per call."
+        "Even with this flag, callers must pass confirm=True per call. "
+        "Also read from MCP_ALLOW_DESTRUCTIVE."
     ),
 )
 def cli(

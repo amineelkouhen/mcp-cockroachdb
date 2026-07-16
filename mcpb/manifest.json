@@ -1,0 +1,109 @@
+{
+  "manifest_version": "0.4",
+  "name": "cockroachdb-mcp-server",
+  "display_name": "CockroachDB MCP Server",
+  "version": "0.2.0",
+  "description": "Natural-language interface for managing, monitoring, and querying CockroachDB from any MCP client.",
+  "long_description": "Exposes CockroachDB as a set of MCP tools organized into thirteen categories: Cluster Monitoring, Database Operations, Table Management, Query Engine, User & Privilege Management, Vector Search (C-SPANN), Job Management, Backup & Restore, Statistics, Multi-Region, Changefeeds, Cluster Admin, and Diagnostics. Ships with a safety layer: strict identifier validation, parameterized values, --read-only mode, --allow-destructive + per-call confirm=True, and DSN redaction in responses.",
+  "author": {
+    "name": "Amine El Kouhen",
+    "url": "https://github.com/amineelkouhen"
+  },
+  "homepage": "https://github.com/amineelkouhen/mcp-cockroachdb",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/amineelkouhen/mcp-cockroachdb"
+  },
+  "license": "MIT",
+  "keywords": ["cockroachdb", "database", "sql", "vector-search", "mcp", "postgres"],
+  "server": {
+    "type": "uv",
+    "entry_point": "src/main.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "src/main.py"
+      ],
+      "env": {
+        "CRDB_URL": "${user_config.url}",
+        "MCP_READ_ONLY": "${user_config.read_only}",
+        "MCP_ALLOW_DESTRUCTIVE": "${user_config.allow_destructive}",
+        "CRDB_SSL_CA_PATH": "${user_config.ssl_ca_cert}",
+        "CRDB_SSL_CERTFILE": "${user_config.ssl_cert}",
+        "CRDB_SSL_KEYFILE": "${user_config.ssl_key}"
+      }
+    }
+  },
+  "user_config": {
+    "url": {
+      "type": "string",
+      "title": "CockroachDB connection URL",
+      "description": "postgresql://user:password@host:port/database (add ?sslmode=verify-full&sslrootcert=... for TLS)",
+      "sensitive": true,
+      "required": true
+    },
+    "read_only": {
+      "type": "boolean",
+      "title": "Read-only mode",
+      "description": "Refuse every DDL and write-shaped tool. Recommended for assistant-style deployments.",
+      "default": true,
+      "required": false
+    },
+    "allow_destructive": {
+      "type": "boolean",
+      "title": "Allow destructive operations",
+      "description": "Enable drop_database, drop_table, drop_index, drop_view. Each call must still pass confirm=True. Ignored when read-only is on.",
+      "default": false,
+      "required": false
+    },
+    "ssl_ca_cert": {
+      "type": "file",
+      "title": "SSL CA certificate",
+      "description": "Path to the CA (root) certificate. Only needed when the URL uses sslmode=verify-ca or verify-full without an inline sslrootcert.",
+      "required": false
+    },
+    "ssl_cert": {
+      "type": "file",
+      "title": "SSL client certificate",
+      "description": "Path to the client certificate. Optional; only for cert-based auth.",
+      "required": false
+    },
+    "ssl_key": {
+      "type": "file",
+      "title": "SSL client key",
+      "description": "Path to the client private key. Optional; only for cert-based auth.",
+      "required": false
+    }
+  },
+  "tools": [
+    { "name": "get_cluster_health", "description": "Cluster health and node status." },
+    { "name": "get_running_queries", "description": "Currently running queries." },
+    { "name": "find_slow_queries", "description": "Slow queries from statement statistics." },
+    { "name": "execute_query", "description": "Run a SQL query with JSON/CSV/table output." },
+    { "name": "run_transaction", "description": "Run a multi-statement transaction." },
+    { "name": "explain_query", "description": "Retrieve the query plan for a statement." },
+    { "name": "list_databases", "description": "List databases." },
+    { "name": "create_database", "description": "Create a database." },
+    { "name": "describe_table", "description": "Describe a table's schema and metadata." },
+    { "name": "bulk_import", "description": "Bulk import CSV/Avro data from cloud storage." },
+    { "name": "vector_similarity_search", "description": "Vector similarity search with cosine/L2/inner-product metrics." },
+    { "name": "create_cspann_index", "description": "Create a C-SPANN ANN vector index (v25.2+)." },
+    { "name": "list_jobs", "description": "List async jobs (BACKUP, RESTORE, IMPORT, CHANGEFEED, SCHEMA CHANGE)." },
+    { "name": "create_backup", "description": "Take a full / database / table backup to s3/gs/azure/nodelocal/userfile." },
+    { "name": "restore_backup", "description": "Restore from a backup URI (destructive)." },
+    { "name": "create_changefeed", "description": "Create a CDC changefeed to Kafka / webhook / cloud storage." },
+    { "name": "show_regions", "description": "List cluster regions." },
+    { "name": "set_table_locality", "description": "Set a table's multi-region locality (REGIONAL, REGIONAL_BY_ROW, GLOBAL)." },
+    { "name": "show_cluster_setting", "description": "Read a cluster setting." },
+    { "name": "get_recent_traces", "description": "Recent tracing spans from crdb_internal.cluster_inflight_traces." }
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "linux", "win32"],
+    "runtimes": {
+      "python": ">=3.12"
+    }
+  }
+}

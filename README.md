@@ -31,6 +31,7 @@ The CockroachDB MCP Server is a **natural language interface** designed for LLMs
   - [Quick Start with uvx](#quick-start-with-uvx)
   - [Development Installation](#development-installation)
   - [With Docker](#with-docker)
+  - [As an MCPB Bundle (Smithery / Claude Desktop)](#as-an-mcpb-bundle-smithery--claude-desktop)
 - [Configuration](#configuration)
   - [Configuration via command line arguments](#configuration-via-command-line-arguments)
   - [Configuration via Environment Variables](#configuration-via-environment-variables)
@@ -451,6 +452,28 @@ Finally, configure the client to create the container at start-up. An example fo
 ```
 
 To use the [CockroachDB MCP Docker](https://hub.docker.com/mcp/server/cockroachdb) image, just replace your image name (`mcp-cockroachdb` in the example above) with `mcp/cockroachdb`.
+
+### As an MCPB Bundle (Smithery / Claude Desktop)
+
+The repository ships an [MCPB](https://github.com/anthropics/mcpb) manifest under `mcpb/manifest.json`. MCPB (`.mcpb`) is a single-file archive that clients like Claude Desktop and catalogs like [Smithery](https://smithery.ai) can install as a local stdio server, prompting the user for connection details via a UI instead of hand-editing JSON.
+
+The manifest declares six `user_config` fields: `url` (marked `sensitive`, so the client stores it in the OS keychain rather than plaintext config), `read_only` (default `true`), `allow_destructive` (default `false`), and optional `ssl_ca_cert` / `ssl_cert` / `ssl_key` file pickers. Values are passed to the server via env vars (`CRDB_URL`, `MCP_READ_ONLY`, `MCP_ALLOW_DESTRUCTIVE`, `CRDB_SSL_*`).
+
+**Build the bundle:**
+
+```sh
+npm install -g @anthropic-ai/mcpb
+cp mcpb/manifest.json ./manifest.json
+mcpb pack . cockroachdb-mcp-server.mcpb
+```
+
+**Install locally in Claude Desktop:** double-click the resulting `.mcpb` file. Claude Desktop will show the config form built from `user_config`.
+
+**Publish to Smithery:**
+
+```sh
+smithery mcp publish ./cockroachdb-mcp-server.mcpb -n amineelkouhen/cockroachdb-mcp-server
+```
 
 ## Configuration
 
