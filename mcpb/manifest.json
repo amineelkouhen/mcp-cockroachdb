@@ -78,28 +78,6 @@
       "required": false
     }
   },
-  "tools": [
-    { "name": "get_cluster_health", "description": "Cluster health and node status." },
-    { "name": "get_running_queries", "description": "Currently running queries." },
-    { "name": "find_slow_queries", "description": "Slow queries from statement statistics." },
-    { "name": "execute_query", "description": "Run a SQL query with JSON/CSV/table output." },
-    { "name": "run_transaction", "description": "Run a multi-statement transaction." },
-    { "name": "explain_query", "description": "Retrieve the query plan for a statement." },
-    { "name": "list_databases", "description": "List databases." },
-    { "name": "create_database", "description": "Create a database." },
-    { "name": "describe_table", "description": "Describe a table's schema and metadata." },
-    { "name": "bulk_import", "description": "Bulk import CSV/Avro data from cloud storage." },
-    { "name": "vector_similarity_search", "description": "Vector similarity search with cosine/L2/inner-product metrics." },
-    { "name": "create_cspann_index", "description": "Create a C-SPANN ANN vector index (v25.2+)." },
-    { "name": "list_jobs", "description": "List async jobs (BACKUP, RESTORE, IMPORT, CHANGEFEED, SCHEMA CHANGE)." },
-    { "name": "create_backup", "description": "Take a full / database / table backup to s3/gs/azure/nodelocal/userfile." },
-    { "name": "restore_backup", "description": "Restore from a backup URI (destructive)." },
-    { "name": "create_changefeed", "description": "Create a CDC changefeed to Kafka / webhook / cloud storage." },
-    { "name": "show_regions", "description": "List cluster regions." },
-    { "name": "set_table_locality", "description": "Set a table's multi-region locality (REGIONAL, REGIONAL_BY_ROW, GLOBAL)." },
-    { "name": "show_cluster_setting", "description": "Read a cluster setting." },
-    { "name": "get_recent_traces", "description": "Recent tracing spans from crdb_internal.cluster_inflight_traces." }
-  ],
   "compatibility": {
     "platforms": ["darwin", "linux", "win32"],
     "runtimes": {
