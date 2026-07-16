@@ -1,0 +1,54 @@
+# Keep the bundle lean. gitignore syntax.
+
+# VCS
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# Python build / cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual envs
+.venv/
+venv/
+env/
+.python-version
+
+# Test / lint caches
+tests/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Docker (not used by the local stdio bundle)
+Dockerfile
+docker-compose.yaml
+docker-compose.yml
+.dockerignore
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Prior bundle artifacts
+*.mcpb
+
+# Docs & examples aren't needed at runtime
+examples/
