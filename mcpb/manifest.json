@@ -17,7 +17,7 @@
   "license": "MIT",
   "keywords": ["cockroachdb", "database", "sql", "vector-search", "mcp", "postgres"],
   "server": {
-    "type": "uv",
+    "type": "python",
     "entry_point": "src/main.py",
     "mcp_config": {
       "command": "uv",
